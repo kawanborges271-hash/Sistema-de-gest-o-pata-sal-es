@@ -115,8 +115,8 @@ begin
         if v_slot >= v_day + time '12:00' and v_slot < v_day + time '13:00' then
           v_slot := v_day + time '13:00';
         end if;
-        -- deixa ~35% dos horários livres
-        if random() < 0.35 then
+        -- deixa ~55% dos horários livres
+        if random() < 0.55 then
           v_slot := v_slot + interval '30 minutes';
           continue;
         end if;
@@ -145,7 +145,8 @@ begin
         insert into public.appointments (salon_id, client_id, status, origin, starts_at, ends_at,
                                          created_at, completed_at, confirmed_at, cancelled_at)
         values (
-          p_salon_id, v_clients[1 + floor(random() * 30)::int], 'agendado',
+          -- clientes 1–12 são frequentes, 13–20 ocasionais; 21–30 ficam para os perfis abaixo
+          p_salon_id, case when random() < 0.7 then v_clients[1 + floor(random() * 12)::int] else v_clients[13 + floor(random() * 8)::int] end, 'agendado',
           (array['recepcao','recepcao','whatsapp','link_online']::public.appointment_origin[])[1 + floor(random() * 4)::int],
           v_slot at time zone v_tz, v_end at time zone v_tz,
           (v_slot at time zone v_tz) - interval '5 days', null, null, null
@@ -165,6 +166,46 @@ begin
       end loop;
     end loop;
   end loop;
+
+  -- Clientes 21–25: sumidas (última visita entre 75 e 150 dias atrás) → "Em risco"/"Inativo" e "Hora de retocar"
+  for i in 21..25 loop
+    v_day := current_date - (75 + (i - 21) * 18);
+    while extract(isodow from v_day) not between 2 and 6 loop v_day := v_day - 1; end loop;
+    select s.id, s.duration_minutes, s.price into v_service
+    from public.professional_services ps join public.services s on s.id = ps.service_id
+    where ps.professional_id = p_carla order by s.duration_minutes limit 1 offset (i % 3);
+    v_slot := v_day + (array[time '09:00', time '10:00', time '13:00', time '14:00', time '15:00'])[i - 20];
+    v_end := v_slot + make_interval(mins => v_service.duration_minutes);
+    insert into public.appointments (salon_id, client_id, status, origin, starts_at, ends_at, created_at)
+    values (p_salon_id, v_clients[i], 'agendado', 'recepcao', v_slot at time zone v_tz, v_end at time zone v_tz, (v_slot at time zone v_tz) - interval '3 days')
+    returning id into v_appt;
+    insert into public.appointment_items (salon_id, appointment_id, service_id, professional_id, starts_at, ends_at, price)
+    values (p_salon_id, v_appt, v_service.id, p_carla, v_slot at time zone v_tz, v_end at time zone v_tz, v_service.price);
+    update public.appointments set status = 'concluido' where id = v_appt;
+    update public.appointments set completed_at = ends_at where id = v_appt;
+  end loop;
+
+  -- Clientes 26–30: leads que ainda não vieram (26 e 27 já têm horário marcado na semana que vem)
+  for i in 26..27 loop
+    v_day := current_date + 7 + (i - 26);
+    while extract(isodow from v_day) not between 2 and 6 loop v_day := v_day + 1; end loop;
+    select s.id, s.duration_minutes, s.price into v_service
+    from public.professional_services ps join public.services s on s.id = ps.service_id
+    where ps.professional_id = p_bia order by s.duration_minutes limit 1;
+    v_slot := v_day + time '18:00';
+    v_end := v_slot + make_interval(mins => v_service.duration_minutes);
+    continue when exists (
+      select 1 from public.appointment_items
+      where professional_id = p_bia and occupies
+        and tstzrange(starts_at, ends_at) && tstzrange(v_slot at time zone v_tz, v_end at time zone v_tz));
+    insert into public.appointments (salon_id, client_id, status, origin, starts_at, ends_at)
+    values (p_salon_id, v_clients[i], 'agendado', 'link_online', v_slot at time zone v_tz, v_end at time zone v_tz)
+    returning id into v_appt;
+    insert into public.appointment_items (salon_id, appointment_id, service_id, professional_id, starts_at, ends_at, price)
+    values (p_salon_id, v_appt, v_service.id, p_bia, v_slot at time zone v_tz, v_end at time zone v_tz, v_service.price);
+  end loop;
+  update public.clients set created_at = now() - make_interval(days => (random() * 10)::int)
+   where id = any(v_clients[26:30]);
 
   update public.salons set onboarding_completed = true where id = p_salon_id;
 end $$;

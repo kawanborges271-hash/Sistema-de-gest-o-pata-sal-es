@@ -68,6 +68,9 @@ create table public.salon_members (
   unique (salon_id, user_id)
 );
 create index salon_members_user_idx on public.salon_members(user_id) where active;
+-- permite o embed salon_members → profiles no PostgREST
+alter table public.salon_members
+  add constraint salon_members_profile_fk foreign key (user_id) references public.profiles(id) on delete cascade;
 
 -- Convites por e-mail (expiram em 7 dias)
 create table public.invitations (

@@ -514,16 +514,15 @@ nxt as (
   group by client_id
 ),
 ret as (
-  -- última vez de cada serviço com intervalo de retorno → próxima data prevista
-  select client_id, min(due) as next_return_at
-  from (
-    select a.client_id, i.service_id, max(i.starts_at) + make_interval(days => max(s.return_interval_days)) as due
-    from public.appointments a
-    join public.appointment_items i on i.appointment_id = a.id
-    join public.services s on s.id = i.service_id
-    where a.status = 'concluido' and s.return_interval_days is not null
-    group by a.client_id, i.service_id
-  ) x group by client_id
+  -- Próximo retorno = último atendimento concluído + menor intervalo de retorno entre os serviços dele
+  select distinct on (a.client_id)
+         a.client_id,
+         a.starts_at + make_interval(days => min(s.return_interval_days) over (partition by a.id)) as next_return_at
+  from public.appointments a
+  join public.appointment_items i on i.appointment_id = a.id
+  join public.services s on s.id = i.service_id
+  where a.status = 'concluido' and s.return_interval_days is not null
+  order by a.client_id, a.starts_at desc
 )
 select
   c.*,
