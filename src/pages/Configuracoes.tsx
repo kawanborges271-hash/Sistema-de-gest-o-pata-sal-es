@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/common/PageHeader";
 import { SectionCard } from "@/components/common/SectionCard";
 import { BusinessHoursEditor } from "@/components/salao/BusinessHoursEditor";
+import { PaymentMethodsCard } from "@/components/salao/PaymentMethodsCard";
 import { SalonInfoFields, salonInfoFrom, type SalonInfo } from "@/components/salao/SalonInfoFields";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,7 +41,7 @@ export default function Configuracoes() {
 
   return (
     <div>
-      <PageHeader eyebrow="Gestão · Configurações" title="Os dados do seu salão." subtitle="Nome, contato, horário de funcionamento e as regras de cálculo de comissão." />
+      <PageHeader eyebrow="Gestão · Configurações" title="Os dados do seu salão." subtitle="Nome, contato, horário de funcionamento, formas de pagamento e as regras de cálculo de comissão." />
       <div className="grid gap-6 lg:grid-cols-2">
         <SectionCard title="Salão" hint={`Link de agendamento (Fase 3): /agendar/${salon!.slug}`}>
           <SalonInfoFields value={info} onChange={setInfo} />
@@ -55,11 +56,11 @@ export default function Configuracoes() {
           <Button className="mt-4" disabled={saving === "hours"} onClick={() => save("hours", { business_hours: hours })}>Salvar horário</Button>
         </SectionCard>
 
-        <SectionCard title="Comissão" hint="Usado no cálculo das comissões a partir da Fase 2.">
+        <SectionCard title="Comissão" hint="Vale para as comandas pagas daqui em diante; o que já foi calculado não muda.">
           <RadioGroup value={commission.commission_base} onValueChange={(v) => setCommission({ ...commission, commission_base: v as Salon["commission_base"] })} className="space-y-2">
             <Label className="flex items-start gap-3 rounded-xl border border-border p-3 font-normal">
               <RadioGroupItem value="bruto" className="mt-0.5" />
-              <span><b>Sobre o valor bruto</b><span className="block text-xs text-muted-foreground">Comissão = preço do serviço × %. Mais simples de explicar para a equipe.</span></span>
+              <span><b>Sobre o valor bruto</b><span className="block text-xs text-muted-foreground">Comissão = valor cobrado (já com desconto) × %. Mais simples de explicar para a equipe.</span></span>
             </Label>
             <Label className="flex items-start gap-3 rounded-xl border border-border p-3 font-normal">
               <RadioGroupItem value="liquido" className="mt-0.5" />
@@ -83,6 +84,8 @@ export default function Configuracoes() {
             Salvar regra
           </Button>
         </SectionCard>
+
+        <PaymentMethodsCard />
       </div>
     </div>
   );

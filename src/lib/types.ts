@@ -217,3 +217,213 @@ export type Invitation = {
   revoked_at: string | null;
   created_at: string;
 };
+
+// ---------------------------------------------------------------------
+// Fase 2: comandas, caixa, estoque, pacotes e comissões
+// ---------------------------------------------------------------------
+export type PaymentKind = "dinheiro" | "pix" | "debito" | "credito" | "voucher" | "outro";
+
+export type PaymentMethod = {
+  id: string;
+  salon_id: string;
+  name: string;
+  kind: PaymentKind;
+  fee_pct: number;
+  installment_fee_pct: number;
+  max_installments: number;
+  sort_order: number;
+  active: boolean;
+};
+
+export type CashSession = {
+  id: string;
+  salon_id: string;
+  opened_by: string | null;
+  opened_at: string;
+  opening_amount: number;
+  closed_by: string | null;
+  closed_at: string | null;
+  expected_amount: number | null;
+  counted_amount: number | null;
+  difference: number | null;
+  notes: string | null;
+};
+
+export type CashSessionSummary = {
+  cash_session_id: string;
+  salon_id: string;
+  opened_at: string;
+  closed_at: string | null;
+  opening_amount: number;
+  received_by_kind: Partial<Record<PaymentKind, number>>;
+  received_total: number;
+  fees_total: number;
+  orders_count: number;
+  suprimentos: number;
+  sangrias: number;
+  despesas: number;
+  estornos: number;
+  expected_cash: number;
+  counted_amount: number | null;
+  difference: number | null;
+};
+
+export type CashMovementKind = "suprimento" | "sangria" | "despesa" | "estorno";
+export type CashMovement = {
+  id: string;
+  salon_id: string;
+  cash_session_id: string;
+  kind: CashMovementKind;
+  amount: number;
+  description: string;
+  order_id: string | null;
+  created_at: string;
+};
+
+export type OrderStatus = "aberta" | "fechada" | "cancelada";
+export type OrderItemKind = "servico" | "produto" | "pacote";
+
+export type Order = {
+  id: string;
+  salon_id: string;
+  number: number;
+  client_id: string | null;
+  appointment_id: string | null;
+  status: OrderStatus;
+  subtotal: number;
+  discount_amount: number;
+  discount_reason: string | null;
+  total: number;
+  fee_total: number;
+  notes: string | null;
+  cash_session_id: string | null;
+  opened_at: string;
+  closed_at: string | null;
+  cancelled_at: string | null;
+  cancel_reason: string | null;
+  client?: { id: string; name: string; phone: string | null } | null;
+};
+
+export type OrderItem = {
+  id: string;
+  salon_id: string;
+  order_id: string;
+  kind: OrderItemKind;
+  service_id: string | null;
+  product_id: string | null;
+  package_id: string | null;
+  professional_id: string | null;
+  appointment_item_id: string | null;
+  client_package_balance_id: string | null;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  discount_amount: number;
+  total: number;
+  created_at: string;
+};
+
+export type OrderPayment = {
+  id: string;
+  order_id: string;
+  payment_method_id: string;
+  kind: PaymentKind;
+  amount: number;
+  installments: number;
+  fee_amount: number;
+  refunded_at: string | null;
+  created_at: string;
+};
+
+export type ProductUnit = "un" | "ml" | "g";
+export type Product = {
+  id: string;
+  salon_id: string;
+  name: string;
+  brand: string | null;
+  barcode: string | null;
+  unit: ProductUnit;
+  package_size: number;
+  for_sale: boolean;
+  for_use: boolean;
+  cost_price: number;
+  sale_price: number;
+  commission_pct: number;
+  min_stock: number;
+  current_stock: number;
+  active: boolean;
+};
+
+export type StockMovementKind = "entrada" | "venda" | "uso" | "ajuste" | "perda" | "estorno";
+export type StockMovement = {
+  id: string;
+  salon_id: string;
+  product_id: string;
+  kind: StockMovementKind;
+  quantity: number;
+  unit_cost: number | null;
+  order_id: string | null;
+  notes: string | null;
+  created_at: string;
+};
+
+export type ServiceSupply = { salon_id: string; service_id: string; product_id: string; quantity: number };
+
+export type Package = {
+  id: string;
+  salon_id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  validity_days: number | null;
+  active: boolean;
+};
+export type PackageItem = { salon_id: string; package_id: string; service_id: string; sessions: number };
+
+export type ClientPackageBalance = {
+  balance_id: string;
+  client_package_id: string;
+  salon_id: string;
+  client_id: string;
+  client_name: string;
+  package_name: string;
+  purchased_at: string;
+  expires_at: string | null;
+  status: "ativo" | "cancelado";
+  service_id: string;
+  service_name: string;
+  sessions_total: number;
+  sessions_used: number;
+  sessions_left: number;
+  usable: boolean;
+};
+
+export type CommissionStatus = "pendente" | "paga" | "estornada";
+export type Commission = {
+  id: string;
+  salon_id: string;
+  professional_id: string;
+  order_id: string;
+  order_item_id: string | null;
+  order_number: number;
+  description: string;
+  competence_date: string;
+  base_amount: number;
+  pct: number;
+  amount: number;
+  status: CommissionStatus;
+  reversal_of_id: string | null;
+  payout_id: string | null;
+  created_at: string;
+};
+
+export type CommissionPayout = {
+  id: string;
+  salon_id: string;
+  professional_id: string;
+  period_until: string;
+  total: number;
+  method: string | null;
+  notes: string | null;
+  paid_at: string;
+};

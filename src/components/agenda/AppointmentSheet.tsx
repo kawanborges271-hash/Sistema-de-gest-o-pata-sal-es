@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { AlertTriangle, ArrowRight, CalendarClock, Check, MessageCircle, Play, UserX, X } from "lucide-react";
+import { AlertTriangle, ArrowRight, CalendarClock, Check, MessageCircle, Play, Receipt, UserX, X } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +15,9 @@ import { useProfessionalServices, useProfessionals, useServices } from "@/hooks/
 import {
   fetchWaitlistSuggestions, useAppointment, useReschedule, useSetStatus, useUpdateAppointmentNotes, type WaitlistSuggestion,
 } from "@/hooks/useAgenda";
+import { useAppointmentOrder, useOpenOrderForAppointment } from "@/hooks/useFinance";
 import { ORIGIN_LABEL } from "@/lib/agenda";
+import { ORDER_STATUS_LABEL } from "@/lib/finance";
 import { CONFLICT_MESSAGE, errorMessage, scheduleConflict, type ScheduleConflict } from "@/lib/errors";
 import { formatPhone, money } from "@/lib/format";
 import { dayKey, fmt, fmtTime, zonedToUtc } from "@/lib/tz";
@@ -32,7 +34,11 @@ export function AppointmentSheet({ id, onOpenChange, onSelect, onBook }: {
   const tz = salon!.timezone;
   const { can } = usePermissions();
   const manage = can("agenda.gerenciar");
+  const canOrder = can("comandas");
+  const navigate = useNavigate();
   const { data: appt } = useAppointment(id);
+  const { data: order } = useAppointmentOrder(id, canOrder);
+  const openOrder = useOpenOrderForAppointment();
   const { data: services = [] } = useServices();
   const { data: pros = [] } = useProfessionals();
   const { data: links = [] } = useProfessionalServices();
@@ -160,6 +166,25 @@ export function AppointmentSheet({ id, onOpenChange, onSelect, onBook }: {
                 <button className="text-xs text-muted-foreground underline-offset-4 hover:underline" onClick={() => onSelect(appt.rescheduled_from_id!)}>Remarcado de outro horário · ver original</button>
               )}
               {appt.cancel_reason && <p className="text-sm text-muted-foreground">Motivo: {appt.cancel_reason}</p>}
+
+              {mode === "view" && canOrder && (order || (st && ["agendado", "confirmado", "em_atendimento", "concluido"].includes(st))) && (
+                <Button
+                  className="w-full"
+                  variant={order?.status === "fechada" ? "outline" : "default"}
+                  disabled={openOrder.isPending}
+                  onClick={async () => {
+                    if (order) return navigate(`/comandas/${order.id}`);
+                    try {
+                      navigate(`/comandas/${await openOrder.mutateAsync(appt.id)}`);
+                    } catch (err) {
+                      toast.error(errorMessage(err));
+                    }
+                  }}
+                >
+                  <Receipt className="mr-1 h-4 w-4" />
+                  {order ? `Comanda #${order.number} · ${ORDER_STATUS_LABEL[order.status]} · ${money(Number(order.total))}` : "Abrir comanda"}
+                </Button>
+              )}
 
               {mode === "view" && (
                 <div className="grid grid-cols-2 gap-2">

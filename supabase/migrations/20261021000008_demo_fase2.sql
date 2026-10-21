@@ -82,7 +82,8 @@ begin
     (p_salon_id, pr_henna, 'entrada', 2 * 4, 'Compra inicial (4 potes)', now() - interval '45 days'),
     (p_salon_id, pr_shampoo, 'entrada', 6, 'Reposição', now() - interval '20 days'),
     (p_salon_id, pr_mascara, 'entrada', 6, 'Reposição', now() - interval '20 days'),
-    (p_salon_id, pr_esmalte, 'entrada', 12, 'Reposição', now() - interval '20 days');
+    (p_salon_id, pr_esmalte, 'entrada', 12, 'Reposição', now() - interval '20 days'),
+    (p_salon_id, pr_oleo, 'entrada', 6, 'Reposição', now() - interval '20 days');
 
   -- Pacotes
   insert into public.packages (salon_id, name, description, price, validity_days)

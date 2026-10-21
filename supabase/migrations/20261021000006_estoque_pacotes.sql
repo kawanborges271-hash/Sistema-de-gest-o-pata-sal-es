@@ -180,6 +180,7 @@ select
   cp.id as client_package_id,
   cp.salon_id,
   cp.client_id,
+  c.name as client_name,
   cp.name as package_name,
   cp.purchased_at,
   cp.expires_at,
@@ -192,7 +193,8 @@ select
   (cp.status = 'ativo' and (cp.expires_at is null or cp.expires_at > now()) and b.sessions_used < b.sessions_total) as usable
 from public.client_package_balances b
 join public.client_packages cp on cp.id = b.client_package_id
-join public.services s on s.id = b.service_id;
+join public.services s on s.id = b.service_id
+join public.clients c on c.id = cp.client_id;
 
 grant select on public.client_package_overview to authenticated;
 

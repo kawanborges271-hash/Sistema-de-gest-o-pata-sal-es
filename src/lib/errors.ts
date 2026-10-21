@@ -21,7 +21,14 @@ export function errorMessage(err: unknown): string {
   if (!e?.message) return "Algo deu errado. Tente de novo.";
   const conflict = scheduleConflict(e);
   if (conflict) return CONFLICT_MESSAGE[conflict];
+  // Regras do caixa/comanda vêm com prefixo; a tela mostra só a frase
+  const prefixed = e.message.match(/^(CAIXA_FECHADO|PAGAMENTO_DIFERENTE): (.*)$/);
+  if (prefixed) return prefixed[2].charAt(0).toUpperCase() + prefixed[2].slice(1);
   if (e.code === "23505") return "Já existe um registro com esses dados (ex.: telefone repetido).";
   if (e.code === "42501" || e.message.includes("row-level security")) return "Seu papel não permite essa ação.";
   return e.message;
+}
+
+export function isCashClosed(err: unknown): boolean {
+  return Boolean((err as { message?: string } | null)?.message?.startsWith("CAIXA_FECHADO"));
 }

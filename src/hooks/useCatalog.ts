@@ -99,11 +99,14 @@ export function useSaveService() {
   return useMutation({
     mutationFn: async (s: Partial<Service> & { id?: string }) => {
       const payload = { ...s, salon_id: salonId };
-      const q = s.id
-        ? supabase.from("services").update(payload).eq("id", s.id)
-        : supabase.from("services").insert(payload);
-      const { error } = await q;
+      if (s.id) {
+        const { error } = await supabase.from("services").update(payload).eq("id", s.id);
+        if (error) throw error;
+        return s.id;
+      }
+      const { data, error } = await supabase.from("services").insert(payload).select("id").single();
       if (error) throw error;
+      return data.id as string;
     },
     onSuccess: invalidate,
   });
