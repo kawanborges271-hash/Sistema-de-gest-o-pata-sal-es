@@ -29,7 +29,20 @@ Interface em português do Brasil, moeda R$, datas dd/mm/aaaa e horários sempre
 | Comissões | Calculadas no pagamento da comanda: % do profissional para o serviço, senão o padrão do profissional, senão o do serviço; produto usa o % do produto. Sobre o bruto (menos descontos) ou o líquido (menos taxa da maquininha e/ou custo dos produtos usados), conforme Configurações. Acerto por período, com opção de tirar do caixa. |
 | Configurações | Formas de pagamento com taxa, parcelas e taxa por parcela. |
 
-As fases 3 a 5 (CRM, WhatsApp, dashboard, Painel SaaS) aparecem no menu como "Fase N".
+## Fase 3: CRM, WhatsApp e agendamento online
+
+| Área | O que faz |
+|---|---|
+| CRM | Kanban com Novo lead → Em contato → Agendado → Follow-up → Cliente → Não compareceu → Base fria → Perdido (Perdido pede o motivo). Arrastar entre colunas, próximo follow-up, conversa do WhatsApp dentro do card e histórico de etapas. KPIs: leads em andamento, follow-ups atrasados e conversão em 30 dias. Depois do primeiro agendamento o card anda sozinho com a agenda (agendou, concluiu, faltou, cancelou). |
+| WhatsApp (Z-API) | Em Configurações: ID da instância, token (nunca volta para a tela, só os 4 últimos dígitos), Client-Token, QR Code, verificação da conexão, teste de envio e a URL do webhook com chave secreta (mascarada, com copiar e "gerar nova chave"). Mensagem de outra instância é recusada. Número novo vira lead com origem WhatsApp; número conhecido atualiza o card. |
+| Automações | 12 mensagens com texto editável, variáveis, liga/desliga e "o que acontece depois": confirmação ao agendar, lembrete 24h, confirmação 2h (SIM confirma, NÃO marca "pediu para remarcar", avisa a recepção e manda o link), remarcação, cancelamento, pós-atendimento com nota 0–10 (9–10 pede avaliação no Google, até 6 avisa o dono), hora de retocar, recuperação de falta (não sai se já remarcou), aniversário com cupom, reativação (60 dias, X por dia, quem mais gastou primeiro) e pacote acabando. |
+| Regras de envio | Janela de horário, limite por dia, intervalo entre mensagens, 3 tentativas e opt-out por SAIR/PARAR/STOP. Painel com enviadas hoje, fila e falhas em 7 dias; fila em Próximos/Enviadas/Não enviadas; campanhas com públicos prontos; lista de opt-out; notas do pós-atendimento (média e NPS). |
+| Agendamento online | `/agendar/<slug>`, sem login e pensado para celular: serviços → profissional ou "qualquer um" → dia e horários livres de verdade (jornada, bloqueios, agenda) → nome e WhatsApp. Entra com origem "Link online", cria o lead, avisa no sino e dispara a confirmação. Limite de 3 horários futuros por telefone e 40 reservas por hora por salão. |
+| Sino | Lead novo, reserva pelo link, pedido de remarcação e nota baixa, com "marcar todas como lidas". |
+
+Clientes da demonstração ficam com `is_demo`: mesmo com a Z-API ligada, nada sai para eles.
+
+As fases 4 e 5 (dashboard, inteligência, marketing, Painel SaaS) aparecem no menu como "Fase N".
 
 ## Regras garantidas no banco
 
@@ -62,6 +75,33 @@ supabase functions deploy team-invite
 supabase secrets set APP_URL=https://seu-dominio.com
 ```
 
+#### WhatsApp (Fase 3)
+
+```bash
+supabase functions deploy whatsapp-webhook whatsapp-dispatch whatsapp-connect
+supabase secrets set CRON_SECRET=$(openssl rand -hex 24)
+```
+
+`whatsapp-webhook` e `whatsapp-dispatch` rodam com `verify_jwt = false` (já em `supabase/config.toml`): o webhook
+é protegido pela chave secreta na URL e pela instância, o disparo pelo header `x-cron-secret`. `whatsapp-connect`
+exige o login de um admin do salão. A service role só existe dentro das funções.
+
+O banco roda `run_automations()` a cada 5 minutos com pg_cron (ligue as extensões **pg_cron** e **pg_net** em
+Database → Extensions). Para o disparo, agende a função a cada minuto no SQL Editor:
+
+```sql
+select cron.schedule('whatsapp-dispatch', '* * * * *', $$
+  select net.http_post(
+    url := 'https://SEU_REF.supabase.co/functions/v1/whatsapp-dispatch',
+    headers := jsonb_build_object('Content-Type', 'application/json', 'x-cron-secret', 'O_MESMO_CRON_SECRET')
+  )
+$$);
+```
+
+Depois, em Configurações → WhatsApp: salve o ID da instância e o token da Z-API, leia o QR Code, clique em
+"Configurar webhook na Z-API" e envie um teste. Para testar sem Z-API real, `ZAPI_BASE_URL` aponta as funções
+para um servidor falso.
+
 No painel do Supabase, em Authentication → URL Configuration, coloque a URL do app em *Site URL* e
 `https://seu-dominio.com/**` em *Redirect URLs* (o convite redireciona para `/convite/<token>`).
 
@@ -93,13 +133,20 @@ sobreposição, encaixe, jornada, bloqueio, cancelamento liberando horário, rem
 consentimento de fotos, storage por salão, último admin e salão suspenso. Os da Fase 2 (`20_phase2.sql`) cobrem
 caixa fechado, pagamento que não bate, parcelas, taxa, baixa de estoque, comissões (bruto, líquido, desconto, pacote),
 estorno de comanda paga, acerto de comissão, diferença no fechamento do caixa e o que cada papel pode ver.
+Os da Fase 3 (`30_phase3.sql`) cobrem segredo e instância do webhook, lead novo e conhecido, SIM/NÃO, nota 0–10,
+opt-out, janela, limite diário, espaçamento, 3 tentativas, cada automação (inclusive "não envia se já remarcou"),
+campanhas, o card andando com a agenda, horários livres e limites do agendamento online, e o que o anônimo e cada
+papel conseguem ver (o token da Z-API nunca sai do banco).
+
+As Edge Functions são checadas com `deno check` e o parser da Z-API tem testes no vitest (`src/test/zapi.test.ts`).
 
 ## Estrutura
 
 ```
 supabase/migrations/   001 tenancy · 002 catálogo · 003 clientes · 004 agenda · 005 demonstração
                        006 estoque e pacotes · 007 comandas, caixa e comissões · 008 demonstração da Fase 2
-supabase/functions/    team-invite (convite por e-mail com a service role só no servidor)
+                       009 CRM e WhatsApp · 010 agendamento online · 011 demonstração da Fase 3
+supabase/functions/    team-invite (convite por e-mail) · whatsapp-webhook · whatsapp-dispatch · whatsapp-connect
 supabase/tests/        testes SQL + stub mínimo do ambiente Supabase
 src/pages/             uma tela por rota
 src/components/        agenda, clientes, serviços, profissionais, layout, comuns e shadcn/ui

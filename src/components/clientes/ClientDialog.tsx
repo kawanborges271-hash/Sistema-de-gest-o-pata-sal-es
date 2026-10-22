@@ -81,7 +81,7 @@ export function ClientDialog({ open, onOpenChange, client, onSaved }: {
             <Switch checked={form.photo_consent} onCheckedChange={(v) => setForm({ ...form, photo_consent: v })} />
           </label>
           <label className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
-            <span>Não quer receber mensagens de marketing</span>
+            <span>Não quer receber mensagens automáticas<span className="block text-xs text-muted-foreground">Lembretes, campanhas e aniversário no WhatsApp. Também liga sozinho quando a pessoa responde SAIR.</span></span>
             <Switch checked={form.opt_out} onCheckedChange={(v) => setForm({ ...form, opt_out: v })} />
           </label>
         </div>

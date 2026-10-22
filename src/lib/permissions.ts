@@ -23,7 +23,10 @@ export type Feature =
   | "pacotes"
   | "pacotes.editar"
   | "comissoes"              // admin vê todas; profissional, as próprias
-  | "comissoes.pagar";
+  | "comissoes.pagar"
+  | "crm"
+  | "automacoes"             // fila, campanhas e opt-out
+  | "automacoes.editar";     // textos, liga/desliga e regras de envio
 
 const MATRIX: Record<Feature, SalonRole[]> = {
   agenda: ["admin", "recepcao", "profissional"],
@@ -45,6 +48,9 @@ const MATRIX: Record<Feature, SalonRole[]> = {
   "pacotes.editar": ["admin"],
   comissoes: ["admin", "profissional"],
   "comissoes.pagar": ["admin"],
+  crm: ["admin", "recepcao"],
+  automacoes: ["admin", "recepcao"],
+  "automacoes.editar": ["admin"],
 };
 
 export function can(role: SalonRole | null, feature: Feature): boolean {

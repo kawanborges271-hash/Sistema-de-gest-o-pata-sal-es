@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/common/PageHeader";
 import { SectionCard } from "@/components/common/SectionCard";
 import { BusinessHoursEditor } from "@/components/salao/BusinessHoursEditor";
+import { OnlineBookingCard } from "@/components/salao/OnlineBookingCard";
 import { PaymentMethodsCard } from "@/components/salao/PaymentMethodsCard";
 import { SalonInfoFields, salonInfoFrom, type SalonInfo } from "@/components/salao/SalonInfoFields";
+import { WhatsappCard } from "@/components/salao/WhatsappCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { errorMessage } from "@/lib/errors";
@@ -41,9 +43,9 @@ export default function Configuracoes() {
 
   return (
     <div>
-      <PageHeader eyebrow="Gestão · Configurações" title="Os dados do seu salão." subtitle="Nome, contato, horário de funcionamento, formas de pagamento e as regras de cálculo de comissão." />
+      <PageHeader eyebrow="Gestão · Configurações" title="Os dados do seu salão." subtitle="Nome, contato, horário de funcionamento, pagamento, comissão, WhatsApp e o link de agendamento online." />
       <div className="grid gap-6 lg:grid-cols-2">
-        <SectionCard title="Salão" hint={`Link de agendamento (Fase 3): /agendar/${salon!.slug}`}>
+        <SectionCard title="Salão" hint={`Endereço do link de agendamento: /agendar/${salon!.slug}`}>
           <SalonInfoFields value={info} onChange={setInfo} />
           <Button className="mt-4" disabled={saving === "info"}
             onClick={() => save("info", { ...info, name: info.name.trim() || salon!.name, whatsapp: info.whatsapp ? normalizePhone(info.whatsapp) : null })}>
@@ -86,6 +88,8 @@ export default function Configuracoes() {
         </SectionCard>
 
         <PaymentMethodsCard />
+        <WhatsappCard />
+        <OnlineBookingCard />
       </div>
     </div>
   );

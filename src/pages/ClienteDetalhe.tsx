@@ -15,6 +15,7 @@ import { ClientDialog } from "@/components/clientes/ClientDialog";
 import { AppointmentDialog } from "@/components/agenda/AppointmentDialog";
 import { AppointmentSheet } from "@/components/agenda/AppointmentSheet";
 import { ClientOrdersTab } from "@/components/clientes/ClientOrdersTab";
+import { Conversation } from "@/components/crm/Conversation";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useProfessionals, useServices } from "@/hooks/useCatalog";
@@ -106,7 +107,7 @@ export default function ClienteDetalhe() {
             <LifecycleBadge status={c.lifecycle_status} />
             <span className="text-xs text-muted-foreground">{CLIENT_ORIGIN_LABEL[c.origin]} · cliente desde {fmtDate(c.created_at, tz)}</span>
             {c.archived_at && <span className="rounded-full bg-muted px-2 py-0.5 text-[11px]">arquivada</span>}
-            {c.opt_out && <span className="rounded-full bg-muted px-2 py-0.5 text-[11px]">não recebe marketing</span>}
+            {c.opt_out && <span className="rounded-full bg-muted px-2 py-0.5 text-[11px]">não recebe WhatsApp automático</span>}
           </div>
           <h1 className="mt-3 font-display text-3xl font-light md:text-[40px]">{c.name}</h1>
           <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
@@ -148,6 +149,7 @@ export default function ClienteDetalhe() {
           <TabsTrigger value="ficha">Ficha técnica ({notes.length})</TabsTrigger>
           <TabsTrigger value="fotos">Fotos ({photos.length})</TabsTrigger>
           {can("comandas") && <TabsTrigger value="comandas">Comandas e pacotes</TabsTrigger>}
+          {can("crm") && c.phone && <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="historico" className="pt-4">
@@ -247,6 +249,12 @@ export default function ClienteDetalhe() {
         {can("comandas") && (
           <TabsContent value="comandas" className="pt-4">
             <ClientOrdersTab clientId={c.id} tz={tz} />
+          </TabsContent>
+        )}
+
+        {can("crm") && c.phone && (
+          <TabsContent value="whatsapp" className="pt-4">
+            <Conversation phone={c.phone} clientId={c.id} optedOut={c.opt_out} className="max-w-2xl" />
           </TabsContent>
         )}
       </Tabs>

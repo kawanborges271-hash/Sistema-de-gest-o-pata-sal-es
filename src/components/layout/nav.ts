@@ -23,7 +23,7 @@ export const NAV: NavGroup[] = [
       { title: "Clientes", url: "/clientes", icon: Users, feature: "clientes" },
       { title: "Comandas", url: "/comandas", icon: Receipt, feature: "comandas" },
       { title: "Caixa", url: "/caixa", icon: Wallet, feature: "caixa" },
-      { title: "CRM", url: "/crm", icon: KanbanSquare, phase: 3 },
+      { title: "CRM", url: "/crm", icon: KanbanSquare, feature: "crm" },
     ],
   },
   {
@@ -41,7 +41,7 @@ export const NAV: NavGroup[] = [
       { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, phase: 4 },
       { title: "Marketing & Vendas", url: "/marketing", icon: Megaphone, phase: 4 },
       { title: "Inteligência", url: "/inteligencia", icon: Brain, phase: 4 },
-      { title: "Automações", url: "/automacoes", icon: MessageCircle, phase: 3 },
+      { title: "Automações", url: "/automacoes", icon: MessageCircle, feature: "automacoes" },
       { title: "Fidelidade", url: "/fidelidade", icon: Gift, phase: 4 },
     ],
   },
