@@ -18,7 +18,7 @@ const schema = z.object({
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? "/agenda";
+  const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? "/";
   const [email, setEmail] = useState(new URLSearchParams(location.search).get("email") ?? "");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
