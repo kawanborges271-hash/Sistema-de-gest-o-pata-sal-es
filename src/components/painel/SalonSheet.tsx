@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Ban, RotateCcw } from "lucide-react";
+import { Ban, Eye, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import type { MoveTarget } from "@/components/painel/MoveUserDialog";
+import { useAuth } from "@/contexts/AuthContext";
 import { usePlans, usePlatformSalonMembers, useSetPlan, useSetSuspended } from "@/hooks/usePlatform";
 import { ROLE_LABEL } from "@/lib/agenda";
 import { errorMessage } from "@/lib/errors";
@@ -18,6 +20,20 @@ import type { PlatformSalon } from "@/lib/types";
 
 /** Detalhe do salão no painel: uso, plano, equipe e suspensão. Sem nenhum valor financeiro. */
 export function SalonSheet({ salon: s, onClose, onMove }: { salon: PlatformSalon | null; onClose: () => void; onMove: (t: MoveTarget) => void }) {
+  const { enterSupport } = useAuth();
+  const navigate = useNavigate();
+  const [entering, setEntering] = useState(false);
+  const viewOperation = async (salonId: string) => {
+    setEntering(true);
+    try {
+      await enterSupport(salonId);
+      navigate("/dashboard");
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setEntering(false);
+    }
+  };
   const { data: plans = [] } = usePlans();
   const { data: members = [] } = usePlatformSalonMembers(s?.id ?? null);
   const setPlan = useSetPlan();
@@ -59,6 +75,16 @@ export function SalonSheet({ salon: s, onClose, onMove }: { salon: PlatformSalon
               <SheetTitle className="font-display text-2xl font-light">{s.name}</SheetTitle>
               <p className="text-sm text-muted-foreground">/agendar/{s.slug} · criado em {fmt(s.created_at, "dd/MM/yyyy")}</p>
             </SheetHeader>
+
+            <div className="mt-4 rounded-xl border border-border bg-muted/40 p-3">
+              <Button className="w-full" disabled={entering} onClick={() => viewOperation(s.id)}>
+                <Eye className="mr-1.5 h-4 w-4" />
+                {entering ? "Abrindo…" : "Ver operação"}
+              </Button>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Abre agenda, clientes, comandas, caixa e dashboard deste salão só para leitura. O acesso fica no histórico.
+              </p>
+            </div>
 
             {s.suspended_at && (
               <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm">

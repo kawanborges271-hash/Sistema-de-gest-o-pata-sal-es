@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { setReadOnlyMode, supabase } from "@/integrations/supabase/client";
 import type { Membership, Profile, Salon, SalonRole } from "@/lib/types";
 
 type AuthContextValue = {
@@ -15,11 +15,34 @@ type AuthContextValue = {
   isPlatformAdmin: boolean;
   /** Tem vínculo com o salão, mas ele não abre (suspenso pelo suporte). */
   salonBlocked: boolean;
+  /** Super admin vendo um salão como suporte: tudo aparece, nada se altera. */
+  readOnly: boolean;
+  enterSupport: (salonId: string) => Promise<void>;
+  exitSupport: () => void;
   loading: boolean;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
   switchSalon: (salonId: string) => Promise<void>;
 };
+
+const SUPPORT_KEY = "salon-os:suporte";
+
+function readSupportSalon(): string | null {
+  try {
+    return sessionStorage.getItem(SUPPORT_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writeSupportSalon(id: string | null) {
+  try {
+    if (id) sessionStorage.setItem(SUPPORT_KEY, id);
+    else sessionStorage.removeItem(SUPPORT_KEY);
+  } catch {
+    // sem sessionStorage o modo suporte dura só até recarregar a página
+  }
+}
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
@@ -32,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
   const [salonBlocked, setSalonBlocked] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [supportSalonId, setSupportSalonId] = useState<string | null>(readSupportSalon);
 
   const clear = () => {
     setProfile(null);
@@ -52,6 +76,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(prof as Profile | null);
     setMemberships(list);
     setIsPlatformAdmin(Boolean(pa));
+
+    const support = pa ? readSupportSalon() : null;
+    setReadOnlyMode(Boolean(support));
+    if (support) {
+      const { data: s } = await supabase.from("salons").select("*").eq("id", support).maybeSingle();
+      setSalon(s as Salon | null);
+      setSalonBlocked(false);
+      setProfessionalId(null);
+      return;
+    }
 
     const salonId =
       (prof?.current_salon_id && list.some((m) => m.salon_id === prof.current_salon_id) && prof.current_salon_id) ||
@@ -100,12 +134,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [refresh],
   );
 
+  const enterSupport = useCallback(
+    async (salonId: string) => {
+      const { error } = await supabase.rpc("platform_view_salon", { p_salon_id: salonId });
+      if (error) throw error;
+      writeSupportSalon(salonId);
+      setSupportSalonId(salonId);
+      await refresh();
+    },
+    [refresh],
+  );
+
+  const exitSupport = useCallback(() => {
+    writeSupportSalon(null);
+    setSupportSalonId(null);
+    setReadOnlyMode(false);
+    void refresh();
+  }, [refresh]);
+
   const signOut = async () => {
+    writeSupportSalon(null);
+    setSupportSalonId(null);
+    setReadOnlyMode(false);
     await supabase.auth.signOut();
     clear();
   };
 
-  const role = (salon && memberships.find((m) => m.salon_id === salon.id)?.role) || null;
+  const readOnly = Boolean(isPlatformAdmin && supportSalonId && salon?.id === supportSalonId);
+  const role = readOnly ? "admin" : (salon && memberships.find((m) => m.salon_id === salon.id)?.role) || null;
 
   return (
     <AuthContext.Provider
@@ -119,6 +175,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         memberships,
         isPlatformAdmin,
         salonBlocked,
+        readOnly,
+        enterSupport,
+        exitSupport,
         loading,
         signOut,
         refresh,
