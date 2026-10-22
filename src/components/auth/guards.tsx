@@ -14,13 +14,13 @@ export function RequireAuth() {
 
 /** Sem salão → criar no onboarding. Admin com onboarding pendente → terminar. */
 export function RequireSalon() {
-  const { salon, role, loading, memberships, isPlatformAdmin, salonBlocked } = useAuth();
+  const { salon, role, loading, memberships, isPlatformAdmin, salonBlocked, readOnly } = useAuth();
   if (loading) return <FullPageLoader />;
   if (!salon && memberships.length === 0) return <Navigate to={isPlatformAdmin ? "/painel" : "/onboarding"} replace />;
   if (!salon && salonBlocked) return <SalonSuspended />;
   if (!salon) return <FullPageLoader />;
-  if (salon.suspended_at) return <FullPageLoader label="Este salão está suspenso. Fale com o suporte." />;
-  if (role === "admin" && !salon.onboarding_completed) return <Navigate to="/onboarding" replace />;
+  if (salon.suspended_at && !readOnly) return <FullPageLoader label="Este salão está suspenso. Fale com o suporte." />;
+  if (role === "admin" && !readOnly && !salon.onboarding_completed) return <Navigate to="/onboarding" replace />;
   return <Outlet />;
 }
 

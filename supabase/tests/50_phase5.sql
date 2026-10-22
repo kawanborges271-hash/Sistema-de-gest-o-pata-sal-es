@@ -236,3 +236,31 @@ select :'sa', id, 'qualquer' from public.clients where salon_id = :'sa' limit 1 
 select pg_temp.check((select date_from from public.waitlist where id = :'espera') = (now() at time zone 'Pacific/Kiritimati')::date,
                      'lista de espera começa em "hoje" no fuso do salão');
 update public.salons set timezone = 'America/Sao_Paulo' where id = :'sa';
+
+-- Suporte: super admin lê a operação de qualquer salão só em transação de leitura
+select pg_temp.as_user(:'suporte');
+select pg_temp.check((select count(*) from public.clients where salon_id = :'sa') = 0,
+                     'fora do modo leitura o super admin continua sem ver clientes');
+select pg_temp.expect_error(format($$select public.dashboard_summary(%L, current_date - 30, current_date)$$, :'sa'), '%');
+select pg_temp.as_postgres();
+
+start transaction read only;
+select pg_temp.as_user(:'suporte');
+select pg_temp.check((select count(*) from public.clients where salon_id = :'sa') > 0, 'modo leitura: super admin vê os clientes');
+select pg_temp.check((select count(*) from public.cash_sessions where salon_id = :'sa') > 0, 'modo leitura: super admin vê o caixa');
+select pg_temp.check((select count(*) from public.orders where salon_id = :'sa') > 0, 'modo leitura: super admin vê as comandas');
+select pg_temp.check(public.dashboard_summary(:'sa', current_date - 30, current_date) is not null,
+                     'modo leitura: super admin abre o dashboard');
+select pg_temp.check(public.cash_session_expected(:'caixa_a') is not null, 'modo leitura: super admin vê o esperado do caixa');
+select pg_temp.expect_error(format($$update public.clients set name = 'x' where salon_id = %L$$, :'sa'), '25006');
+commit;
+select pg_temp.as_postgres();
+
+select pg_temp.as_user(:'suporte');
+select pg_temp.check((select count(*) from public.clients where salon_id = :'sa' and name = 'x') = 0, 'nada foi alterado');
+select public.platform_view_salon(:'sa');
+select pg_temp.as_user(:'admin');
+select pg_temp.expect_error(format($$select public.platform_view_salon(%L)$$, :'sa'), '42501');
+select pg_temp.as_postgres();
+select pg_temp.check((select count(*) from public.platform_audit where action = 'ver_operacao' and salon_id = :'sa') = 1,
+                     'entrada do suporte no salão fica no histórico');
