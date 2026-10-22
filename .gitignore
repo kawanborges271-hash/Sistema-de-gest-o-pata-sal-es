@@ -26,4 +26,6 @@ dist-ssr
 .env
 .env.*
 !.env.example
+# Só valores públicos (URL e chave publishable); nunca a chave secret
+!.env.production
 supabase/.temp
