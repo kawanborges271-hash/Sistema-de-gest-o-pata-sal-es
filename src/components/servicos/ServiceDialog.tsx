@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCategories, useSaveCategory, useSaveService } from "@/hooks/useCatalog";
+import { useProducts, useSaveServiceSupplies, useServiceSupplies } from "@/hooks/useStock";
 import { errorMessage } from "@/lib/errors";
 import type { Service } from "@/lib/types";
 
@@ -27,11 +29,21 @@ export function ServiceDialog({ open, onOpenChange, service }: {
   const saveCategory = useSaveCategory();
   const [form, setForm] = useState(empty);
   const [newCategory, setNewCategory] = useState("");
+  const { data: products = [] } = useProducts();
+  const { data: currentSupplies = [] } = useServiceSupplies(service?.id);
+  const saveSupplies = useSaveServiceSupplies();
+  const [supplies, setSupplies] = useState<{ product_id: string; quantity: string }[]>([]);
+  const supplyProducts = products.filter((p) => p.active && p.for_use);
 
   useEffect(() => {
     if (open) setForm(service ? { ...empty, ...service, description: service.description ?? "" } : empty);
     setNewCategory("");
   }, [open, service]);
+
+  useEffect(() => {
+    if (open) setSupplies(service ? currentSupplies.map((x) => ({ product_id: x.product_id, quantity: String(Number(x.quantity)) })) : []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, service, currentSupplies.length]);
 
   const set = <K extends keyof typeof empty>(k: K, v: (typeof empty)[K]) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -42,13 +54,17 @@ export function ServiceDialog({ open, onOpenChange, service }: {
     try {
       let categoryId = form.category_id;
       if (newCategory.trim()) categoryId = await saveCategory.mutateAsync(newCategory);
-      await save.mutateAsync({
+      const id = await save.mutateAsync({
         ...(service ? { id: service.id } : {}),
         ...form,
         name: form.name.trim(),
         description: form.description.trim() || null,
         category_id: categoryId,
       });
+      const validSupplies = supplies
+        .filter((x) => x.product_id && Number(x.quantity.replace(",", ".")) > 0)
+        .map((x) => ({ product_id: x.product_id, quantity: Number(x.quantity.replace(",", ".")) }));
+      if (id && (service || validSupplies.length)) await saveSupplies.mutateAsync({ serviceId: id, supplies: validSupplies });
       toast.success(service ? "Serviço atualizado" : "Serviço criado");
       onOpenChange(false);
     } catch (err) {
@@ -114,6 +130,34 @@ export function ServiceDialog({ open, onOpenChange, service }: {
             <Label>Descrição (opcional)</Label>
             <Textarea rows={2} value={form.description} onChange={(e) => set("description", e.target.value)} />
           </div>
+          {supplyProducts.length > 0 && (
+            <div className="space-y-2 rounded-xl border border-border p-3">
+              <div className="text-sm">
+                Produtos usados
+                <span className="block text-xs text-muted-foreground">Baixados do estoque a cada atendimento pago. Ex.: 60 g de tinta e 90 ml de oxidante.</span>
+              </div>
+              {supplies.map((sp, idx) => {
+                const prod = products.find((p) => p.id === sp.product_id);
+                return (
+                  <div key={idx} className="flex items-center gap-2">
+                    <Select value={sp.product_id} onValueChange={(v) => setSupplies((l) => l.map((x, j) => (j === idx ? { ...x, product_id: v } : x)))}>
+                      <SelectTrigger className="flex-1"><SelectValue placeholder="Produto" /></SelectTrigger>
+                      <SelectContent>{supplyProducts.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Input aria-label="Quantidade usada" className="w-20" inputMode="decimal" value={sp.quantity}
+                      onChange={(e) => setSupplies((l) => l.map((x, j) => (j === idx ? { ...x, quantity: e.target.value } : x)))} />
+                    <span className="w-6 text-xs text-muted-foreground">{prod?.unit ?? ""}</span>
+                    <Button type="button" size="icon" variant="ghost" aria-label="Remover produto" onClick={() => setSupplies((l) => l.filter((_, j) => j !== idx))}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                );
+              })}
+              <Button type="button" size="sm" variant="outline" onClick={() => setSupplies((l) => [...l, { product_id: "", quantity: "" }])}>
+                <Plus className="mr-1 h-4 w-4" /> Produto
+              </Button>
+            </div>
+          )}
           <label className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
             <span>Aparece no agendamento online</span>
             <Switch checked={form.online_booking} onCheckedChange={(v) => set("online_booking", v)} />

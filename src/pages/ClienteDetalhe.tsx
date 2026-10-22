@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Archive, ArrowLeft, CalendarPlus, Camera, FlaskConical, MessageCircle, Pencil, Receipt, Trash2 } from "lucide-react";
+import { Archive, ArrowLeft, CalendarPlus, Camera, FlaskConical, MessageCircle, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,7 @@ import { LifecycleBadge, StatusBadge } from "@/components/common/StatusBadge";
 import { ClientDialog } from "@/components/clientes/ClientDialog";
 import { AppointmentDialog } from "@/components/agenda/AppointmentDialog";
 import { AppointmentSheet } from "@/components/agenda/AppointmentSheet";
+import { ClientOrdersTab } from "@/components/clientes/ClientOrdersTab";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useProfessionals, useServices } from "@/hooks/useCatalog";
@@ -146,7 +147,7 @@ export default function ClienteDetalhe() {
           <TabsTrigger value="historico">Histórico ({history.length})</TabsTrigger>
           <TabsTrigger value="ficha">Ficha técnica ({notes.length})</TabsTrigger>
           <TabsTrigger value="fotos">Fotos ({photos.length})</TabsTrigger>
-          <TabsTrigger value="comandas">Comandas e pacotes</TabsTrigger>
+          {can("comandas") && <TabsTrigger value="comandas">Comandas e pacotes</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="historico" className="pt-4">
@@ -243,10 +244,11 @@ export default function ClienteDetalhe() {
           )}
         </TabsContent>
 
-        <TabsContent value="comandas" className="pt-4">
-          <EmptyState icon={Receipt} title="Comandas e pacotes chegam na Fase 2"
-            description="Aqui vão aparecer as comandas pagas, os produtos comprados e o saldo de pacotes desta cliente." />
-        </TabsContent>
+        {can("comandas") && (
+          <TabsContent value="comandas" className="pt-4">
+            <ClientOrdersTab clientId={c.id} tz={tz} />
+          </TabsContent>
+        )}
       </Tabs>
 
       <ClientDialog open={editOpen} onOpenChange={setEditOpen} client={c} />

@@ -14,7 +14,16 @@ export type Feature =
   | "profissionais"
   | "profissionais.editar"
   | "equipe"
-  | "configuracoes";
+  | "configuracoes"
+  | "comandas"
+  | "comandas.cancelar_fechada"
+  | "caixa"
+  | "estoque"
+  | "estoque.editar"         // cadastro de produto, ajuste e perda
+  | "pacotes"
+  | "pacotes.editar"
+  | "comissoes"              // admin vê todas; profissional, as próprias
+  | "comissoes.pagar";
 
 const MATRIX: Record<Feature, SalonRole[]> = {
   agenda: ["admin", "recepcao", "profissional"],
@@ -27,6 +36,15 @@ const MATRIX: Record<Feature, SalonRole[]> = {
   "profissionais.editar": ["admin"],
   equipe: ["admin"],
   configuracoes: ["admin"],
+  comandas: ["admin", "recepcao"],
+  "comandas.cancelar_fechada": ["admin"],
+  caixa: ["admin", "recepcao"],
+  estoque: ["admin", "recepcao"],
+  "estoque.editar": ["admin"],
+  pacotes: ["admin", "recepcao"],
+  "pacotes.editar": ["admin"],
+  comissoes: ["admin", "profissional"],
+  "comissoes.pagar": ["admin"],
 };
 
 export function can(role: SalonRole | null, feature: Feature): boolean {

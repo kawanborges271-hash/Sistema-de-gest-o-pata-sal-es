@@ -19,6 +19,12 @@ const Servicos = lazy(() => import("@/pages/Servicos"));
 const Profissionais = lazy(() => import("@/pages/Profissionais"));
 const Equipe = lazy(() => import("@/pages/Equipe"));
 const Configuracoes = lazy(() => import("@/pages/Configuracoes"));
+const Comandas = lazy(() => import("@/pages/Comandas"));
+const ComandaDetalhe = lazy(() => import("@/pages/ComandaDetalhe"));
+const Caixa = lazy(() => import("@/pages/Caixa"));
+const Estoque = lazy(() => import("@/pages/Estoque"));
+const Pacotes = lazy(() => import("@/pages/Pacotes"));
+const Comissoes = lazy(() => import("@/pages/Comissoes"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -51,6 +57,22 @@ export default function App() {
                     </Route>
                     <Route element={<RequireFeature feature="profissionais" />}>
                       <Route path="/profissionais" element={<Profissionais />} />
+                    </Route>
+                    <Route element={<RequireFeature feature="comandas" />}>
+                      <Route path="/comandas" element={<Comandas />} />
+                      <Route path="/comandas/:id" element={<ComandaDetalhe />} />
+                    </Route>
+                    <Route element={<RequireFeature feature="caixa" />}>
+                      <Route path="/caixa" element={<Caixa />} />
+                    </Route>
+                    <Route element={<RequireFeature feature="estoque" />}>
+                      <Route path="/estoque" element={<Estoque />} />
+                    </Route>
+                    <Route element={<RequireFeature feature="pacotes" />}>
+                      <Route path="/pacotes" element={<Pacotes />} />
+                    </Route>
+                    <Route element={<RequireFeature feature="comissoes" />}>
+                      <Route path="/comissoes" element={<Comissoes />} />
                     </Route>
                     <Route element={<RequireFeature feature="equipe" />}>
                       <Route path="/equipe" element={<Equipe />} />
