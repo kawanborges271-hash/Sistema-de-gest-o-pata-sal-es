@@ -16,11 +16,14 @@ import {
   fetchWaitlistSuggestions, useAppointment, useReschedule, useSetStatus, useUpdateAppointmentNotes, type WaitlistSuggestion,
 } from "@/hooks/useAgenda";
 import { useAppointmentOrder, useOpenOrderForAppointment } from "@/hooks/useFinance";
+import { useAppointmentMessages } from "@/hooks/useWhatsapp";
 import { ORIGIN_LABEL } from "@/lib/agenda";
+import { MESSAGE_KIND_LABEL, QUEUE_STATUS_LABEL, QUEUE_STATUS_STYLE } from "@/lib/crm";
 import { ORDER_STATUS_LABEL } from "@/lib/finance";
 import { CONFLICT_MESSAGE, errorMessage, scheduleConflict, type ScheduleConflict } from "@/lib/errors";
 import { formatPhone, money } from "@/lib/format";
 import { dayKey, fmt, fmtTime, zonedToUtc } from "@/lib/tz";
+import { cn } from "@/lib/utils";
 import type { AppointmentStatus } from "@/lib/types";
 import type { AppointmentDefaults } from "./AppointmentDialog";
 
@@ -38,6 +41,7 @@ export function AppointmentSheet({ id, onOpenChange, onSelect, onBook }: {
   const navigate = useNavigate();
   const { data: appt } = useAppointment(id);
   const { data: order } = useAppointmentOrder(id, canOrder);
+  const { data: messages = [] } = useAppointmentMessages(id, can("automacoes"));
   const openOrder = useOpenOrderForAppointment();
   const { data: services = [] } = useServices();
   const { data: pros = [] } = useProfessionals();
@@ -139,6 +143,15 @@ export function AppointmentSheet({ id, onOpenChange, onSelect, onBook }: {
                       <MessageCircle className="h-4 w-4" /> WhatsApp
                     </a>
                   )}
+                </div>
+              )}
+
+              {appt.reschedule_requested_at && live && (
+                <div className="flex items-start gap-2 rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+                  <span className="flex-1">
+                    <b>Pediu para remarcar</b> pelo WhatsApp em {fmt(appt.reschedule_requested_at, "dd/MM 'às' HH:mm", tz)} e recebeu o link para escolher outro horário.
+                  </span>
                 </div>
               )}
 
@@ -268,6 +281,21 @@ export function AppointmentSheet({ id, onOpenChange, onSelect, onBook }: {
                       ))}
                     </div>
                   )}
+                </div>
+              )}
+
+              {messages.length > 0 && (
+                <div>
+                  <div className="label-caps mb-2">Mensagens do WhatsApp</div>
+                  <ul className="space-y-1.5">
+                    {messages.map((m) => (
+                      <li key={m.id} className="flex items-center gap-2 text-xs">
+                        <span className="flex-1">{MESSAGE_KIND_LABEL[m.kind]}</span>
+                        <span className="text-muted-foreground">{fmt(m.sent_at ?? m.scheduled_for, "dd/MM HH:mm", tz)}</span>
+                        <span className={cn("rounded-full px-2 py-0.5", QUEUE_STATUS_STYLE[m.status])} title={m.last_error ?? undefined}>{QUEUE_STATUS_LABEL[m.status]}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
 

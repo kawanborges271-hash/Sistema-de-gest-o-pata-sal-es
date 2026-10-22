@@ -19,6 +19,17 @@ export type Salon = {
   commission_deduct_product_cost: boolean;
   onboarding_completed: boolean;
   suspended_at: string | null;
+  app_url: string | null;
+  google_review_url: string | null;
+  wa_window_start: string;
+  wa_window_end: string;
+  wa_daily_limit: number;
+  wa_spacing_seconds: number;
+  online_booking_enabled: boolean;
+  online_booking_min_hours: number;
+  online_booking_max_days: number;
+  online_booking_step_minutes: number;
+  online_booking_message: string | null;
 };
 
 /** Chave = dia ISO ("1" = segunda ... "7" = domingo); valor = faixas ["09:00","19:00"]. */
@@ -184,6 +195,8 @@ export type Appointment = {
   rescheduled_from_id: string | null;
   rescheduled_to_id: string | null;
   cancel_reason: string | null;
+  no_show_at: string | null;
+  reschedule_requested_at: string | null;
   created_at: string;
   client?: Pick<Client, "id" | "name" | "phone">;
   items?: AppointmentItem[];
@@ -426,4 +439,163 @@ export type CommissionPayout = {
   method: string | null;
   notes: string | null;
   paid_at: string;
+};
+
+// ---------------------------------------------------------------------
+// Fase 3: CRM, WhatsApp e agendamento online
+// ---------------------------------------------------------------------
+export type LeadStage = "novo" | "em_contato" | "agendado" | "follow_up" | "cliente" | "nao_compareceu" | "base_fria" | "perdido";
+
+export type Lead = {
+  id: string;
+  salon_id: string;
+  client_id: string | null;
+  name: string;
+  phone: string | null;
+  origin: ClientOrigin;
+  stage: LeadStage;
+  stage_changed_at: string;
+  interest: string | null;
+  notes: string | null;
+  next_follow_up_at: string | null;
+  lost_reason: string | null;
+  last_message: string | null;
+  last_message_at: string | null;
+  last_message_direction: "in" | "out" | null;
+  converted_at: string | null;
+  archived_at: string | null;
+  created_at: string;
+};
+
+export type LeadStageHistory = {
+  id: number;
+  lead_id: string;
+  from_stage: LeadStage | null;
+  to_stage: LeadStage;
+  reason: string | null;
+  automatic: boolean;
+  changed_by: string | null;
+  changed_at: string;
+};
+
+export type AutomationKind =
+  | "confirmacao_agendamento" | "lembrete_24h" | "confirmacao_2h" | "reagendamento" | "cancelamento"
+  | "pos_atendimento" | "avaliacao_google" | "retoque" | "recuperacao_falta" | "aniversario"
+  | "reativacao" | "pacote_acabando";
+
+export type Automation = {
+  id: string;
+  salon_id: string;
+  kind: AutomationKind;
+  enabled: boolean;
+  template: string;
+  settings: Record<string, string | number>;
+  updated_at: string;
+};
+
+export type MessageKind = AutomationKind | "campanha" | "manual" | "resposta" | "teste";
+export type QueueStatus = "pendente" | "enviando" | "enviada" | "falhou" | "cancelada" | "ignorada" | "expirada";
+
+export type QueuedMessage = {
+  id: string;
+  salon_id: string;
+  client_id: string | null;
+  lead_id: string | null;
+  appointment_id: string | null;
+  campaign_id: string | null;
+  phone: string;
+  body: string;
+  kind: MessageKind;
+  status: QueueStatus;
+  scheduled_for: string;
+  expires_at: string | null;
+  attempts: number;
+  sent_at: string | null;
+  last_error: string | null;
+  created_at: string;
+  client?: { name: string } | null;
+  lead?: { name: string } | null;
+};
+
+export type WhatsappMessage = {
+  id: string;
+  direction: "in" | "out";
+  phone: string;
+  client_id: string | null;
+  lead_id: string | null;
+  body: string;
+  sender_name: string | null;
+  created_at: string;
+};
+
+export type OptOut = { salon_id: string; phone: string; reason: "palavra_chave" | "manual"; source_message: string | null; created_at: string };
+
+export type Campaign = {
+  id: string;
+  name: string;
+  body: string;
+  audience: string;
+  scheduled_for: string;
+  recipients_count: number;
+  created_at: string;
+};
+
+export type ClientFeedback = { id: string; client_id: string | null; appointment_id: string | null; score: number; created_at: string; client?: { name: string } | null };
+
+export type AppNotification = {
+  id: string;
+  kind: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  created_at: string;
+  read: boolean;
+};
+
+export type WhatsappIntegrationStatus = {
+  configured: boolean;
+  active: boolean;
+  instance_id: string | null;
+  phone: string | null;
+  status: "pendente" | "conectado" | "desconectado" | "erro";
+  token_hint: string | null;
+  client_token_set: boolean;
+  webhook_secret: string;
+  last_checked_at: string | null;
+  last_error: string | null;
+  connected_at: string | null;
+};
+
+export type PublicService = {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  duration_minutes: number;
+  price: number;
+  price_is_starting: boolean;
+};
+export type PublicProfessional = { id: string; name: string; role_title: string | null; color: string; service_ids: string[] };
+export type PublicSalon = {
+  name: string;
+  slug: string;
+  whatsapp: string | null;
+  address: string | null;
+  timezone: string;
+  min_hours: number;
+  max_days: number;
+  message: string | null;
+  business_hours: BusinessHours;
+  services: PublicService[];
+  professionals: PublicProfessional[];
+};
+export type PublicSlot = { starts_at: string; ends_at: string; professional_id: string; professional_name: string };
+export type PublicBooking = {
+  appointment_id: string;
+  starts_at: string;
+  ends_at: string;
+  professional_name: string;
+  services: string;
+  total: number;
+  salon_name: string;
 };

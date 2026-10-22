@@ -25,6 +25,9 @@ const Caixa = lazy(() => import("@/pages/Caixa"));
 const Estoque = lazy(() => import("@/pages/Estoque"));
 const Pacotes = lazy(() => import("@/pages/Pacotes"));
 const Comissoes = lazy(() => import("@/pages/Comissoes"));
+const Crm = lazy(() => import("@/pages/Crm"));
+const Automacoes = lazy(() => import("@/pages/Automacoes"));
+const AgendarPublico = lazy(() => import("@/pages/AgendarPublico"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -44,6 +47,7 @@ export default function App() {
               <Route path="/cadastro" element={<Signup />} />
               <Route path="/redefinir-senha" element={<ResetPassword />} />
               <Route path="/convite/:token" element={<Convite />} />
+              <Route path="/agendar/:slug" element={<AgendarPublico />} />
               <Route element={<RequireAuth />}>
                 <Route path="/onboarding" element={<Onboarding />} />
                 <Route element={<RequireSalon />}>
@@ -73,6 +77,12 @@ export default function App() {
                     </Route>
                     <Route element={<RequireFeature feature="comissoes" />}>
                       <Route path="/comissoes" element={<Comissoes />} />
+                    </Route>
+                    <Route element={<RequireFeature feature="crm" />}>
+                      <Route path="/crm" element={<Crm />} />
+                    </Route>
+                    <Route element={<RequireFeature feature="automacoes" />}>
+                      <Route path="/automacoes" element={<Automacoes />} />
                     </Route>
                     <Route element={<RequireFeature feature="equipe" />}>
                       <Route path="/equipe" element={<Equipe />} />

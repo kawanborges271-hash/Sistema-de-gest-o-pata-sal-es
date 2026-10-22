@@ -53,3 +53,17 @@ export function slugify(s: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
+
+/** "agora", "há 5 min", "há 3 h", "há 2 dias", "há 3 sem." */
+export function timeAgo(iso: string | null | undefined, now: Date = new Date()): string {
+  if (!iso) return EMPTY;
+  const min = Math.round((now.getTime() - new Date(iso).getTime()) / 60_000);
+  if (min < 1) return "agora";
+  if (min < 60) return `há ${min} min`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `há ${h} h`;
+  const d = Math.round(h / 24);
+  if (d < 14) return `há ${d} ${d === 1 ? "dia" : "dias"}`;
+  if (d < 60) return `há ${Math.round(d / 7)} sem.`;
+  return `há ${Math.round(d / 30)} meses`;
+}
