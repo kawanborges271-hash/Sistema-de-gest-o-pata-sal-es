@@ -13,6 +13,8 @@ type AuthContextValue = {
   professionalId: string | null;
   memberships: Membership[];
   isPlatformAdmin: boolean;
+  /** Tem vínculo com o salão, mas ele não abre (suspenso pelo suporte). */
+  salonBlocked: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -28,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [professionalId, setProfessionalId] = useState<string | null>(null);
   const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
+  const [salonBlocked, setSalonBlocked] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const clear = () => {
@@ -36,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setMemberships([]);
     setProfessionalId(null);
     setIsPlatformAdmin(false);
+    setSalonBlocked(false);
   };
 
   const load = useCallback(async (userId: string) => {
@@ -56,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!salonId) {
       setSalon(null);
       setProfessionalId(null);
+      setSalonBlocked(false);
       return;
     }
     const [{ data: s }, { data: p }] = await Promise.all([
@@ -63,6 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       supabase.from("professionals").select("id").eq("salon_id", salonId).eq("user_id", userId).maybeSingle(),
     ]);
     setSalon(s as Salon | null);
+    setSalonBlocked(!s);
     setProfessionalId(p?.id ?? null);
   }, []);
 
@@ -112,6 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         professionalId,
         memberships,
         isPlatformAdmin,
+        salonBlocked,
         loading,
         signOut,
         refresh,

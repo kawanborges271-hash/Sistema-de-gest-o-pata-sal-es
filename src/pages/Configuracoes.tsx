@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/common/PageHeader";
 import { SectionCard } from "@/components/common/SectionCard";
 import { BusinessHoursEditor } from "@/components/salao/BusinessHoursEditor";
+import { PlanCard } from "@/components/salao/PlanCard";
 import { OnlineBookingCard } from "@/components/salao/OnlineBookingCard";
 import { PaymentMethodsCard } from "@/components/salao/PaymentMethodsCard";
 import { SalonInfoFields, salonInfoFrom, type SalonInfo } from "@/components/salao/SalonInfoFields";
@@ -90,6 +91,7 @@ export default function Configuracoes() {
         <PaymentMethodsCard />
         <WhatsappCard />
         <OnlineBookingCard />
+        <PlanCard />
       </div>
     </div>
   );

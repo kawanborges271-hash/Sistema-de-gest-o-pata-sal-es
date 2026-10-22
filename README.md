@@ -53,7 +53,28 @@ Telas só do administrador, exceto Fidelidade (recepção vê saldos e resgata n
 | Inteligência | Plano de ação numerado por valor estimado (leads parados há mais de 3 dias, follow-ups atrasados, hora de retocar, vieram e não voltaram, para reativar, pacotes acabando, dia vazio nos próximos 7 dias, faltas altas), cada um com a próxima ação. Listas com "Criar campanha" que já abre a fila do WhatsApp com o público certo. Serviços que mais faturam, faltas por dia da semana, mapa de calor de ocupação por dia e hora e desempenho por profissional (agendados, comparecimento, faturamento, ticket, retorno das clientes, produtos). Amostra menor que 3 aparece como "poucos". |
 | Fidelidade | Pontos por real pago (configurável), prêmios em serviços resgatados direto na comanda (com "desfazer"), programa de indicação: quem indica ganha crédito quando a indicada paga a primeira comanda, e usa o crédito como forma de pagamento. Extrato por cliente, ajuste manual com motivo obrigatório. Cancelar a comanda devolve pontos, resgate e crédito. |
 
-A Fase 5 (Painel SaaS) vem a seguir.
+## Fase 5: Painel SaaS (super admin)
+
+Em `/painel`, só para quem está em `platform_admins`. O super admin não é membro dos salões: ele não vê agenda,
+clientes nem nenhum valor em reais, só contagens.
+
+| Área | O que faz |
+|---|---|
+| Salões | Lista com plano, equipe, clientes, agendamentos e leads dos últimos 30 dias, mensagens do mês contra o limite, WhatsApp conectado, último acesso e última atividade. Abrir um salão mostra o uso, troca o plano, lista a equipe (com "Mover") e suspende ou reativa (motivo obrigatório). |
+| Novo salão | Nome, e-mail da dona, plano e fuso. Se o e-mail já tem conta, ela vira administradora na hora; se não, sai um link de convite de administradora. |
+| Usuários | Busca por nome ou e-mail, mostra os salões de cada pessoa e move ou dá acesso a outro salão com o papel escolhido. O último administrador de um salão não sai. |
+| Planos | Básico (3 profissionais, 1.000 mensagens/mês) e Pro (15, 10.000), editáveis; em branco é sem limite. |
+| Histórico | Tudo o que o suporte fez: salão criado, plano, suspensão, mudanças de usuários e de limites. |
+
+Limites do plano valem no banco: o 4º profissional ativo do Básico é recusado (`LIMITE_PLANO`) e mensagens acima
+do limite do mês ficam na fila até o mês virar, com um aviso por mês para o administrador. O salão vê o próprio uso
+em Configurações → Plano. A equipe de um salão suspenso vê uma tela explicando a suspensão.
+
+Para tornar alguém super admin (no SQL Editor, depois que a pessoa criou a conta):
+
+```sql
+insert into public.platform_admins (user_id) select id from auth.users where email = 'suporte@seudominio.com';
+```
 
 ## Regras garantidas no banco
 
@@ -75,6 +96,7 @@ A Fase 5 (Painel SaaS) vem a seguir.
 - Recepção opera comandas, caixa e entradas de estoque, mas não vê comissões; profissional vê só as próprias comissões.
 - **Extrato de fidelidade só cresce:** pontos e crédito só mudam pelas funções e gatilhos; estorno e ajuste entram como
   novo movimento. Saldo não fica negativo, item resgatado não muda de preço e o crédito pago na comanda não gera pontos.
+- **Plano e suspensão** só mudam pelo super admin (gatilho em `salons`); toda ação do painel vai para `platform_audit`.
 - Dashboard, Marketing e Inteligência são calculados no banco (`dashboard_summary`, `marketing_report`,
   `intelligence_report`, `intelligence_actions`) no fuso do salão e só respondem ao administrador.
 
@@ -156,6 +178,9 @@ Os da Fase 4 (`40_phase4.sql`) cobrem cada indicador do dashboard e o período a
 gráfico por semana, marketing com e sem lançamento e correção manual, os novos públicos, o plano de ação,
 pontos, resgate e desfazer, crédito de indicação (uma vez por indicada), cancelamento devolvendo tudo,
 ajuste com motivo e quem pode ver o quê.
+Os da Fase 5 (`50_phase5.sql`) cobrem quem acessa o painel, ausência de valores financeiros, limite de profissionais,
+limite de mensagens com um aviso só, criar salão (conta existente e convite), suspender e reativar, mover e dar acesso
+(sem tirar o último admin) e o histórico.
 
 As Edge Functions são checadas com `deno check` e o parser da Z-API tem testes no vitest (`src/test/zapi.test.ts`).
 
@@ -166,6 +191,7 @@ supabase/migrations/   001 tenancy · 002 catálogo · 003 clientes · 004 agend
                        006 estoque e pacotes · 007 comandas, caixa e comissões · 008 demonstração da Fase 2
                        009 CRM e WhatsApp · 010 agendamento online · 011 demonstração da Fase 3
                        012 dashboard, marketing e inteligência · 013 fidelidade e indicação · 014 demonstração da Fase 4
+                       015 painel SaaS, planos e limites · 016 ajustes da revisão
 supabase/functions/    team-invite (convite por e-mail) · whatsapp-webhook · whatsapp-dispatch · whatsapp-connect
 supabase/tests/        testes SQL + stub mínimo do ambiente Supabase
 src/pages/             uma tela por rota
