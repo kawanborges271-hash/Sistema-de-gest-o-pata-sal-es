@@ -191,7 +191,7 @@ supabase/migrations/   001 tenancy · 002 catálogo · 003 clientes · 004 agend
                        006 estoque e pacotes · 007 comandas, caixa e comissões · 008 demonstração da Fase 2
                        009 CRM e WhatsApp · 010 agendamento online · 011 demonstração da Fase 3
                        012 dashboard, marketing e inteligência · 013 fidelidade e indicação · 014 demonstração da Fase 4
-                       015 painel SaaS, planos e limites
+                       015 painel SaaS, planos e limites · 016 ajustes da revisão
 supabase/functions/    team-invite (convite por e-mail) · whatsapp-webhook · whatsapp-dispatch · whatsapp-connect
 supabase/tests/        testes SQL + stub mínimo do ambiente Supabase
 src/pages/             uma tela por rota

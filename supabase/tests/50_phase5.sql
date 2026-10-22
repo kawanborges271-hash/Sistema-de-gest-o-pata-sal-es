@@ -220,3 +220,19 @@ select pg_temp.as_user(:'admin');
 select pg_temp.expect_error($$select * from public.platform_audit_list(10)$$, '42501');
 select pg_temp.expect_error($$select * from public.platform_search_users('bela')$$, '42501');
 select pg_temp.as_postgres();
+
+-- Revisão: esperado do caixa e data da lista de espera
+select id as caixa_a from public.cash_sessions where salon_id = :'sa' order by opened_at desc limit 1 \gset
+select pg_temp.as_user(:'admin');
+select pg_temp.check(public.cash_session_expected(:'caixa_a') is not null, 'admin vê o esperado do próprio caixa');
+select pg_temp.as_user(:'dono_b');
+select pg_temp.check(public.cash_session_expected(:'caixa_a') is null, 'dona de outro salão não vê o esperado do caixa');
+select pg_temp.as_user(:'prof');
+select pg_temp.check(public.cash_session_expected(:'caixa_a') is null, 'profissional não vê o esperado do caixa');
+select pg_temp.as_postgres();
+update public.salons set timezone = 'Pacific/Kiritimati' where id = :'sa';
+insert into public.waitlist (salon_id, client_id, period)
+select :'sa', id, 'qualquer' from public.clients where salon_id = :'sa' limit 1 returning id as espera \gset
+select pg_temp.check((select date_from from public.waitlist where id = :'espera') = (now() at time zone 'Pacific/Kiritimati')::date,
+                     'lista de espera começa em "hoje" no fuso do salão');
+update public.salons set timezone = 'America/Sao_Paulo' where id = :'sa';
