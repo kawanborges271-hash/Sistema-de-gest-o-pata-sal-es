@@ -1,6 +1,6 @@
 import {
   ShieldCheck, Boxes, Brain, CalendarDays, Gift, KanbanSquare, LayoutDashboard, Megaphone, MessageCircle,
-  Package, Percent, Receipt, Scissors, Settings, UserCog, Users, type LucideIcon,
+  Package, Percent, Receipt, Scissors, Settings, UserCog, Users, Wallet, type LucideIcon,
 } from "lucide-react";
 import type { Feature } from "@/lib/permissions";
 
@@ -21,7 +21,8 @@ export const NAV: NavGroup[] = [
     items: [
       { title: "Agenda", url: "/agenda", icon: CalendarDays, feature: "agenda" },
       { title: "Clientes", url: "/clientes", icon: Users, feature: "clientes" },
-      { title: "Comandas & Caixa", url: "/comandas", icon: Receipt, phase: 2 },
+      { title: "Comandas", url: "/comandas", icon: Receipt, feature: "comandas" },
+      { title: "Caixa", url: "/caixa", icon: Wallet, feature: "caixa" },
       { title: "CRM", url: "/crm", icon: KanbanSquare, phase: 3 },
     ],
   },
@@ -30,8 +31,8 @@ export const NAV: NavGroup[] = [
     items: [
       { title: "Serviços", url: "/servicos", icon: Scissors, feature: "servicos" },
       { title: "Profissionais", url: "/profissionais", icon: UserCog, feature: "profissionais" },
-      { title: "Produtos & Estoque", url: "/estoque", icon: Boxes, phase: 2 },
-      { title: "Pacotes", url: "/pacotes", icon: Package, phase: 2 },
+      { title: "Produtos & Estoque", url: "/estoque", icon: Boxes, feature: "estoque" },
+      { title: "Pacotes", url: "/pacotes", icon: Package, feature: "pacotes" },
     ],
   },
   {
@@ -47,7 +48,7 @@ export const NAV: NavGroup[] = [
   {
     label: "Gestão",
     items: [
-      { title: "Comissões", url: "/comissoes", icon: Percent, phase: 2 },
+      { title: "Comissões", url: "/comissoes", icon: Percent, feature: "comissoes" },
       { title: "Equipe", url: "/equipe", icon: ShieldCheck, feature: "equipe" },
       { title: "Configurações", url: "/configuracoes", icon: Settings, feature: "configuracoes" },
     ],
