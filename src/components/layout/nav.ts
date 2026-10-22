@@ -38,11 +38,11 @@ export const NAV: NavGroup[] = [
   {
     label: "Vendas",
     items: [
-      { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, phase: 4 },
-      { title: "Marketing & Vendas", url: "/marketing", icon: Megaphone, phase: 4 },
-      { title: "Inteligência", url: "/inteligencia", icon: Brain, phase: 4 },
+      { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, feature: "dashboard" },
+      { title: "Marketing & Vendas", url: "/marketing", icon: Megaphone, feature: "marketing" },
+      { title: "Inteligência", url: "/inteligencia", icon: Brain, feature: "inteligencia" },
       { title: "Automações", url: "/automacoes", icon: MessageCircle, feature: "automacoes" },
-      { title: "Fidelidade", url: "/fidelidade", icon: Gift, phase: 4 },
+      { title: "Fidelidade", url: "/fidelidade", icon: Gift, feature: "fidelidade" },
     ],
   },
   {

@@ -42,7 +42,18 @@ Interface em português do Brasil, moeda R$, datas dd/mm/aaaa e horários sempre
 
 Clientes da demonstração ficam com `is_demo`: mesmo com a Z-API ligada, nada sai para eles.
 
-As fases 4 e 5 (dashboard, inteligência, marketing, Painel SaaS) aparecem no menu como "Fase N".
+## Fase 4: dashboard, marketing, inteligência e fidelidade
+
+Telas só do administrador, exceto Fidelidade (recepção vê saldos e resgata na comanda).
+
+| Área | O que faz |
+|---|---|
+| Dashboard | Faturamento (card preto), comandas fechadas, ticket médio, agendamentos, comparecimento (compareceram ÷ (compareceram + faltaram)), ocupação da agenda (horas agendadas ÷ horas disponíveis), clientes novos, clientes que voltaram, venda de produtos (% do faturamento) e comissões. Cada card mostra a fórmula e a variação contra o período anterior do mesmo tamanho. Gráfico por dia (por semana acima de 62 dias) com o período anterior ao lado, próximos agendamentos e aniversariantes da semana. Períodos: 7, 30, 90 dias, este mês ou datas livres. |
+| Marketing & Vendas | Lançamento mensal por canal (Meta Ads, Google, Instagram orgânico, indicação). Leads, agendamentos, vendas e receita vêm sozinhos da origem da cliente e podem ser corrigidos à mão. ROI ((receita − investimento) ÷ investimento), CPL, custo por agendamento, ticket médio, lead → venda, funil do mês e evolução de 12 meses. Mês sem lançamento aparece como "—". |
+| Inteligência | Plano de ação numerado por valor estimado (leads parados há mais de 3 dias, follow-ups atrasados, hora de retocar, vieram e não voltaram, para reativar, pacotes acabando, dia vazio nos próximos 7 dias, faltas altas), cada um com a próxima ação. Listas com "Criar campanha" que já abre a fila do WhatsApp com o público certo. Serviços que mais faturam, faltas por dia da semana, mapa de calor de ocupação por dia e hora e desempenho por profissional (agendados, comparecimento, faturamento, ticket, retorno das clientes, produtos). Amostra menor que 3 aparece como "poucos". |
+| Fidelidade | Pontos por real pago (configurável), prêmios em serviços resgatados direto na comanda (com "desfazer"), programa de indicação: quem indica ganha crédito quando a indicada paga a primeira comanda, e usa o crédito como forma de pagamento. Extrato por cliente, ajuste manual com motivo obrigatório. Cancelar a comanda devolve pontos, resgate e crédito. |
+
+A Fase 5 (Painel SaaS) vem a seguir.
 
 ## Regras garantidas no banco
 
@@ -62,6 +73,10 @@ As fases 4 e 5 (dashboard, inteligência, marketing, Painel SaaS) aparecem no me
   estoque volta, sessões de pacote voltam e a comissão vira estorno (se já foi paga, entra negativa no próximo acerto).
 - **Estoque, pagamentos e comissões só mudam pelas funções** do banco; o saldo do produto não é editável direto.
 - Recepção opera comandas, caixa e entradas de estoque, mas não vê comissões; profissional vê só as próprias comissões.
+- **Extrato de fidelidade só cresce:** pontos e crédito só mudam pelas funções e gatilhos; estorno e ajuste entram como
+  novo movimento. Saldo não fica negativo, item resgatado não muda de preço e o crédito pago na comanda não gera pontos.
+- Dashboard, Marketing e Inteligência são calculados no banco (`dashboard_summary`, `marketing_report`,
+  `intelligence_report`, `intelligence_actions`) no fuso do salão e só respondem ao administrador.
 
 ## Como rodar
 
@@ -137,6 +152,10 @@ Os da Fase 3 (`30_phase3.sql`) cobrem segredo e instância do webhook, lead novo
 opt-out, janela, limite diário, espaçamento, 3 tentativas, cada automação (inclusive "não envia se já remarcou"),
 campanhas, o card andando com a agenda, horários livres e limites do agendamento online, e o que o anônimo e cada
 papel conseguem ver (o token da Z-API nunca sai do banco).
+Os da Fase 4 (`40_phase4.sql`) cobrem cada indicador do dashboard e o período anterior, ocupação com bloqueio,
+gráfico por semana, marketing com e sem lançamento e correção manual, os novos públicos, o plano de ação,
+pontos, resgate e desfazer, crédito de indicação (uma vez por indicada), cancelamento devolvendo tudo,
+ajuste com motivo e quem pode ver o quê.
 
 As Edge Functions são checadas com `deno check` e o parser da Z-API tem testes no vitest (`src/test/zapi.test.ts`).
 
@@ -146,6 +165,7 @@ As Edge Functions são checadas com `deno check` e o parser da Z-API tem testes 
 supabase/migrations/   001 tenancy · 002 catálogo · 003 clientes · 004 agenda · 005 demonstração
                        006 estoque e pacotes · 007 comandas, caixa e comissões · 008 demonstração da Fase 2
                        009 CRM e WhatsApp · 010 agendamento online · 011 demonstração da Fase 3
+                       012 dashboard, marketing e inteligência · 013 fidelidade e indicação · 014 demonstração da Fase 4
 supabase/functions/    team-invite (convite por e-mail) · whatsapp-webhook · whatsapp-dispatch · whatsapp-connect
 supabase/tests/        testes SQL + stub mínimo do ambiente Supabase
 src/pages/             uma tela por rota

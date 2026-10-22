@@ -15,6 +15,7 @@ import { ClientDialog } from "@/components/clientes/ClientDialog";
 import { AppointmentDialog } from "@/components/agenda/AppointmentDialog";
 import { AppointmentSheet } from "@/components/agenda/AppointmentSheet";
 import { ClientOrdersTab } from "@/components/clientes/ClientOrdersTab";
+import { ClientLoyaltyTab } from "@/components/fidelidade/ClientLoyaltyTab";
 import { Conversation } from "@/components/crm/Conversation";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -149,6 +150,7 @@ export default function ClienteDetalhe() {
           <TabsTrigger value="ficha">Ficha técnica ({notes.length})</TabsTrigger>
           <TabsTrigger value="fotos">Fotos ({photos.length})</TabsTrigger>
           {can("comandas") && <TabsTrigger value="comandas">Comandas e pacotes</TabsTrigger>}
+          {can("fidelidade") && <TabsTrigger value="fidelidade">Fidelidade</TabsTrigger>}
           {can("crm") && c.phone && <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>}
         </TabsList>
 
@@ -252,6 +254,11 @@ export default function ClienteDetalhe() {
           </TabsContent>
         )}
 
+        {can("fidelidade") && (
+          <TabsContent value="fidelidade" className="pt-4">
+            <ClientLoyaltyTab client={c} />
+          </TabsContent>
+        )}
         {can("crm") && c.phone && (
           <TabsContent value="whatsapp" className="pt-4">
             <Conversation phone={c.phone} clientId={c.id} optedOut={c.opt_out} className="max-w-2xl" />

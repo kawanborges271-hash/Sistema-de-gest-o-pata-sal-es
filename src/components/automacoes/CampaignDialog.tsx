@@ -17,11 +17,17 @@ import { fmt, todayKey, zonedToUtc } from "@/lib/tz";
 const CAMPAIGN_VARS = ["nome", "salao", "link_agendamento"];
 
 /** Mensagem para um público pronto. Entra na fila e respeita janela, limite diário e opt-out. */
-export function CampaignDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+export function CampaignDialog({ open, onOpenChange, defaultAudience = "reativar", defaultBody }: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  defaultAudience?: string;
+  /** Texto sugerido (ex.: convite para um dia vazio da agenda). */
+  defaultBody?: string;
+}) {
   const { salon } = useAuth();
   const tz = salon!.timezone;
   const create = useCreateCampaign();
-  const [audience, setAudience] = useState<string>("reativar");
+  const [audience, setAudience] = useState<string>(defaultAudience);
   const [days, setDays] = useState(60);
   const [name, setName] = useState("");
   const [body, setBody] = useState("Oi, {nome}! Sentimos sua falta aqui no {salao}. Que tal reservar um horário? {link_agendamento}");
@@ -35,8 +41,10 @@ export function CampaignDialog({ open, onOpenChange }: { open: boolean; onOpenCh
 
   useEffect(() => {
     if (open) {
-      setName(CAMPAIGN_AUDIENCES.find((a) => a.value === audience)?.label ?? "");
+      setAudience(defaultAudience);
+      setName(CAMPAIGN_AUDIENCES.find((a) => a.value === defaultAudience)?.label ?? "");
       setWhen({ day: "", time: "10:00" });
+      if (defaultBody) setBody(defaultBody);
     }
     // só ao abrir
     // eslint-disable-next-line react-hooks/exhaustive-deps

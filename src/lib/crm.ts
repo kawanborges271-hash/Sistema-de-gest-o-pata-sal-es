@@ -230,6 +230,8 @@ export function unknownVariables(template: string, allowed: string[]): string[] 
 export const CAMPAIGN_AUDIENCES = [
   { value: "reativar", label: "Para reativar", hint: "Sem visita há 60 dias ou mais e nada marcado" },
   { value: "retoque", label: "Hora de retocar", hint: "Passaram da data de retorno do serviço" },
+  { value: "nao_voltaram", label: "Vieram e não voltaram", hint: "Uma visita só, há mais de 30 dias, e nada marcado" },
+  { value: "pacotes_acabando", label: "Pacotes acabando", hint: "Pacote com 1 sessão ou menos, ou vencendo em 15 dias" },
   { value: "aniversariantes", label: "Aniversariantes do mês", hint: "Fazem aniversário neste mês" },
   { value: "ativos", label: "Clientes ativas", hint: "Vieram nos últimos 60 dias ou têm horário marcado" },
   { value: "todos", label: "Todos com WhatsApp", hint: "Toda a base com telefone e sem opt-out" },

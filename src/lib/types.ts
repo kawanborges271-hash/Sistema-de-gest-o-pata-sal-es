@@ -30,6 +30,10 @@ export type Salon = {
   online_booking_max_days: number;
   online_booking_step_minutes: number;
   online_booking_message: string | null;
+  loyalty_enabled: boolean;
+  loyalty_points_per_real: number;
+  referral_enabled: boolean;
+  referral_credit: number;
 };
 
 /** Chave = dia ISO ("1" = segunda ... "7" = domingo); valor = faixas ["09:00","19:00"]. */
@@ -125,6 +129,7 @@ export type Client = {
   birth_date: string | null;
   gender: string | null;
   origin: ClientOrigin;
+  referred_by_client_id: string | null;
   tags: string[];
   notes: string | null;
   opt_out: boolean;
@@ -246,6 +251,7 @@ export type PaymentMethod = {
   max_installments: number;
   sort_order: number;
   active: boolean;
+  loyalty_credit: boolean;
 };
 
 export type CashSession = {
@@ -328,6 +334,7 @@ export type OrderItem = {
   professional_id: string | null;
   appointment_item_id: string | null;
   client_package_balance_id: string | null;
+  loyalty_reward_id: string | null;
   description: string;
   quantity: number;
   unit_price: number;
@@ -598,4 +605,139 @@ export type PublicBooking = {
   services: string;
   total: number;
   salon_name: string;
+};
+
+// ---------------------------------------------------------------------
+// Fase 4: dashboard, marketing, inteligência e fidelidade
+// ---------------------------------------------------------------------
+export type PeriodMetrics = {
+  from: string;
+  to: string;
+  revenue: number;
+  orders: number;
+  avg_ticket: number | null;
+  appointments: number;
+  attended: number;
+  no_shows: number;
+  attendance_rate: number | null;
+  booked_hours: number;
+  available_hours: number;
+  occupancy: number | null;
+  new_clients: number;
+  returning_clients: number;
+  product_revenue: number;
+  product_share: number | null;
+  commissions: number;
+};
+
+export type DashboardSummary = {
+  current: PeriodMetrics;
+  previous: PeriodMetrics;
+  granularity: "dia" | "semana";
+  series: { bucket: string; current: number; previous: number }[];
+  upcoming: { id: string; starts_at: string; status: AppointmentStatus; client_name: string; services: string | null; professional: string | null }[];
+  birthdays: { id: string; name: string; phone: string | null; date: string; age: number }[];
+};
+
+export type MarketingChannel = "meta_ads" | "google" | "instagram" | "indicacao";
+
+export type MarketingRow = {
+  month: string;
+  channel: MarketingChannel;
+  has_entry: boolean;
+  investment: number;
+  leads: number | null;
+  appointments: number | null;
+  sales: number | null;
+  revenue: number | null;
+  auto_leads: number | null;
+  auto_appointments: number | null;
+  auto_sales: number | null;
+  auto_revenue: number | null;
+  notes: string | null;
+};
+
+export type MarketingEntry = {
+  id: string;
+  salon_id: string;
+  month: string;
+  channel: MarketingChannel;
+  investment: number;
+  leads: number | null;
+  appointments: number | null;
+  sales: number | null;
+  revenue: number | null;
+  notes: string | null;
+};
+
+export type IntelAction = {
+  key: string;
+  rank: number;
+  count: number;
+  impact: number;
+  title: string;
+  detail: string;
+  action: { type: "link"; to: string; label: string } | { type: "campaign"; audience: string; label: string; date?: string };
+};
+
+export type IntelProfessional = {
+  professional_id: string;
+  name: string;
+  color: string;
+  appointments: number;
+  attended: number;
+  no_shows: number;
+  attendance_rate: number | null;
+  revenue: number;
+  orders: number;
+  avg_ticket: number | null;
+  product_revenue: number;
+  clients: number;
+  returned: number;
+  return_rate: number | null;
+};
+
+export type IntelReport = {
+  from: string;
+  to: string;
+  days: number;
+  services: { service_id: string; name: string; sales: number; revenue: number; avg_ticket: number }[];
+  no_shows: { weekday: number; total: number; no_shows: number; rate: number | null }[];
+  heatmap: { weekday: number; hour: number; available: number; booked: number; rate: number | null }[];
+  professionals: IntelProfessional[];
+};
+
+export type LoyaltyReward = {
+  id: string;
+  salon_id: string;
+  service_id: string;
+  points_cost: number;
+  active: boolean;
+  service?: { name: string; price: number } | null;
+};
+
+export type LoyaltyReason = "compra" | "resgate" | "indicacao" | "uso_credito" | "estorno" | "ajuste";
+
+export type LoyaltyMovement = {
+  id: string;
+  client_id: string;
+  kind: "pontos" | "credito";
+  amount: number;
+  reason: LoyaltyReason;
+  order_id: string | null;
+  note: string | null;
+  created_at: string;
+  client?: { name: string } | null;
+};
+
+export type LoyaltyBalance = { salon_id: string; client_id: string; name: string; points: number; credit: number; last_movement_at: string | null };
+
+export type LoyaltySummary = {
+  clients_with_points: number;
+  points_outstanding: number;
+  credit_outstanding: number;
+  points_30d: number;
+  redeemed_30d: number;
+  referrals_total: number;
+  referrals_converted: number;
 };
