@@ -17,6 +17,16 @@ export type NavGroup = { label: string; items: NavItem[] };
 
 export const NAV: NavGroup[] = [
   {
+    label: "Vendas",
+    items: [
+      { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, feature: "dashboard" },
+      { title: "Marketing & Vendas", url: "/marketing", icon: Megaphone, feature: "marketing" },
+      { title: "Inteligência", url: "/inteligencia", icon: Brain, feature: "inteligencia" },
+      { title: "Automações", url: "/automacoes", icon: MessageCircle, feature: "automacoes" },
+      { title: "Fidelidade", url: "/fidelidade", icon: Gift, feature: "fidelidade" },
+    ],
+  },
+  {
     label: "Operação",
     items: [
       { title: "Agenda", url: "/agenda", icon: CalendarDays, feature: "agenda" },
@@ -33,16 +43,6 @@ export const NAV: NavGroup[] = [
       { title: "Profissionais", url: "/profissionais", icon: UserCog, feature: "profissionais" },
       { title: "Produtos & Estoque", url: "/estoque", icon: Boxes, feature: "estoque" },
       { title: "Pacotes", url: "/pacotes", icon: Package, feature: "pacotes" },
-    ],
-  },
-  {
-    label: "Vendas",
-    items: [
-      { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, feature: "dashboard" },
-      { title: "Marketing & Vendas", url: "/marketing", icon: Megaphone, feature: "marketing" },
-      { title: "Inteligência", url: "/inteligencia", icon: Brain, feature: "inteligencia" },
-      { title: "Automações", url: "/automacoes", icon: MessageCircle, feature: "automacoes" },
-      { title: "Fidelidade", url: "/fidelidade", icon: Gift, feature: "fidelidade" },
     ],
   },
   {
