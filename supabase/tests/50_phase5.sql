@@ -264,3 +264,12 @@ select pg_temp.expect_error(format($$select public.platform_view_salon(%L)$$, :'
 select pg_temp.as_postgres();
 select pg_temp.check((select count(*) from public.platform_audit where action = 'ver_operacao' and salon_id = :'sa') = 1,
                      'entrada do suporte no salão fica no histórico');
+
+-- Apagar um salão inteiro leva a equipe e o histórico junto; remover o último admin continua proibido
+select pg_temp.as_postgres();
+select pg_temp.expect_error(format($$delete from public.salon_members where salon_id = %L and role = 'admin'$$, :'sa'), '%');
+delete from public.salons where id = :'sa';
+select pg_temp.check(not exists (select 1 from public.clients where salon_id = :'sa')
+                     and not exists (select 1 from public.salon_members where salon_id = :'sa')
+                     and not exists (select 1 from public.audit_log where salon_id = :'sa'),
+                     'salão apagado leva clientes, equipe e histórico');
