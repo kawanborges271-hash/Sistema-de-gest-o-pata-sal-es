@@ -23,7 +23,7 @@ import type { BusinessHours, SalonRole } from "@/lib/types";
 const STEPS = ["Salão", "Contato e endereço", "Horário", "Equipe", "Começar"];
 
 export default function Onboarding() {
-  const { salon, role, loading, refresh, profile, salonBlocked } = useAuth();
+  const { salon, role, loading, refresh, profile, salonBlocked, isPlatformAdmin, memberships } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
@@ -47,6 +47,8 @@ export default function Onboarding() {
   // salão suspenso: a tela de suspensão (em RequireSalon) explica o que fazer
   if (!salon && salonBlocked) return <Navigate to="/agenda" replace />;
   if (!salon && token) return <Navigate to={`/convite/${token}`} replace />;
+  // super admin sem salão não passa pelo onboarding: vai direto ao Painel SaaS
+  if (!salon && isPlatformAdmin && memberships.length === 0) return <Navigate to="/painel" replace />;
   if (salon && (salon.onboarding_completed || role !== "admin")) return <Navigate to="/agenda" replace />;
 
   const createSalon = async () => {
