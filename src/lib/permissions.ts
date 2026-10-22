@@ -26,7 +26,12 @@ export type Feature =
   | "comissoes.pagar"
   | "crm"
   | "automacoes"             // fila, campanhas e opt-out
-  | "automacoes.editar";     // textos, liga/desliga e regras de envio
+  | "automacoes.editar"      // textos, liga/desliga e regras de envio
+  | "dashboard"
+  | "marketing"
+  | "inteligencia"
+  | "fidelidade"             // saldos, extrato e resgate na comanda
+  | "fidelidade.editar";     // regras, prêmios e ajustes
 
 const MATRIX: Record<Feature, SalonRole[]> = {
   agenda: ["admin", "recepcao", "profissional"],
@@ -51,6 +56,11 @@ const MATRIX: Record<Feature, SalonRole[]> = {
   crm: ["admin", "recepcao"],
   automacoes: ["admin", "recepcao"],
   "automacoes.editar": ["admin"],
+  dashboard: ["admin"],
+  marketing: ["admin"],
+  inteligencia: ["admin"],
+  fidelidade: ["admin", "recepcao"],
+  "fidelidade.editar": ["admin"],
 };
 
 export function can(role: SalonRole | null, feature: Feature): boolean {

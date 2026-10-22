@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useSaveClient } from "@/hooks/useClients";
+import { ClientPicker, type PickedClient } from "@/components/clientes/ClientPicker";
+import { useClient, useSaveClient } from "@/hooks/useClients";
 import { CLIENT_ORIGIN_LABEL } from "@/lib/agenda";
 import { errorMessage } from "@/lib/errors";
 import { formatPhone, normalizePhone } from "@/lib/format";
@@ -20,6 +21,13 @@ export function ClientDialog({ open, onOpenChange, client, onSaved }: {
   onSaved?: (id: string) => void;
 }) {
   const save = useSaveClient();
+  const [referrer, setReferrer] = useState<PickedClient | null>(null);
+  const { data: currentReferrer } = useClient(open ? client?.referred_by_client_id ?? undefined : undefined);
+  useEffect(() => {
+    if (!open) return;
+    setReferrer(currentReferrer && client?.referred_by_client_id === currentReferrer.id
+      ? { id: currentReferrer.id, name: currentReferrer.name, phone: currentReferrer.phone } : null);
+  }, [open, client, currentReferrer]);
   const [form, setForm] = useState({
     name: "", phone: "", email: "", birth_date: "", origin: "outro" as ClientOrigin, tags: "", notes: "", opt_out: false, photo_consent: false,
   });
@@ -35,6 +43,7 @@ export function ClientDialog({ open, onOpenChange, client, onSaved }: {
 
   const submit = async () => {
     if (form.name.trim().length < 2) return toast.error("Informe o nome");
+    if (referrer && referrer.id === client?.id) return toast.error("A cliente não pode indicar a si mesma");
     try {
       const id = await save.mutateAsync({
         ...(client ? { id: client.id } : {}),
@@ -43,6 +52,7 @@ export function ClientDialog({ open, onOpenChange, client, onSaved }: {
         email: form.email.trim() || null,
         birth_date: form.birth_date || null,
         origin: form.origin,
+        referred_by_client_id: form.origin === "indicacao" ? referrer?.id ?? null : null,
         tags: form.tags.split(",").map((t) => t.trim()).filter(Boolean),
         notes: form.notes.trim() || null,
         opt_out: form.opt_out,
@@ -74,6 +84,13 @@ export function ClientDialog({ open, onOpenChange, client, onSaved }: {
               </Select>
             </div>
           </div>
+          {form.origin === "indicacao" && (
+            <div className="space-y-1">
+              <Label>Indicada por</Label>
+              <ClientPicker value={referrer} onChange={setReferrer} />
+              <p className="text-xs text-muted-foreground">Quem indicou ganha o crédito de indicação quando esta cliente pagar a primeira comanda.</p>
+            </div>
+          )}
           <div className="space-y-1"><Label>Etiquetas</Label><Input placeholder="vip, noiva, cabelo cacheado" value={form.tags} onChange={(e) => setForm({ ...form, tags: e.target.value })} /></div>
           <div className="space-y-1"><Label>Observações</Label><Textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
           <label className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">

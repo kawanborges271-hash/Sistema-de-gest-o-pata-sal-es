@@ -4,7 +4,7 @@ import { errorMessage, isCashClosed } from "@/lib/errors";
 import type { PaymentMethod } from "@/lib/types";
 
 const method = (id: string, kind: PaymentMethod["kind"], fee = 0, inst = 0): PaymentMethod => ({
-  id, salon_id: "s", name: id, kind, fee_pct: fee, installment_fee_pct: inst, max_installments: 6, sort_order: 0, active: true,
+  id, salon_id: "s", name: id, kind, fee_pct: fee, installment_fee_pct: inst, max_installments: 6, sort_order: 0, active: true, loyalty_credit: false,
 });
 
 describe("pagamentos", () => {

@@ -18,7 +18,7 @@ async function unwrap<T>(p: PromiseLike<{ data: T | null; error: unknown }>): Pr
 
 /** Tudo que muda quando uma comanda fecha ou cancela. */
 const FINANCE_KEYS = ["orders", "order", "cash", "cash_history", "products", "stock_movements", "commissions",
-  "client_packages", "client_orders", "appointments", "appointment", "client_overview"];
+  "client_packages", "client_orders", "appointments", "appointment", "client_overview", "loyalty"];
 
 export function useInvalidateFinance() {
   const qc = useQueryClient();

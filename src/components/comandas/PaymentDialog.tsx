@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCloseOrder, usePaymentMethods } from "@/hooks/useFinance";
+import { useLoyaltyBalance } from "@/hooks/useLoyalty";
 import { paymentBalance, paymentFee, type PaymentDraft } from "@/lib/finance";
 import { money } from "@/lib/format";
 import { errorMessage, isCashClosed } from "@/lib/errors";
@@ -19,15 +20,19 @@ const parse = (v: string) => Number(v.replace(",", "."));
 const brl = (v: number) => v.toFixed(2).replace(".", ",");
 
 /** Fecha a comanda: uma ou mais formas de pagamento, parcelas no crédito e troco no dinheiro. */
-export function PaymentDialog({ open, onOpenChange, orderId, total, onPaid }: {
+export function PaymentDialog({ open, onOpenChange, orderId, clientId, total, onPaid }: {
   open: boolean;
+  /** Cliente da comanda: libera o "Crédito de indicação" quando ela tem saldo. */
+  clientId?: string | null;
   onOpenChange: (o: boolean) => void;
   orderId: string;
   total: number;
   onPaid: () => void;
 }) {
   const { data: allMethods = [] } = usePaymentMethods();
-  const methods = allMethods.filter((m) => m.active);
+  const { data: balance } = useLoyaltyBalance(open && allMethods.some((m) => m.loyalty_credit) ? clientId : null);
+  const credit = Number(balance?.credit ?? 0);
+  const methods = allMethods.filter((m) => m.active && (!m.loyalty_credit || credit > 0));
   const close = useCloseOrder();
   const navigate = useNavigate();
   const [rows, setRows] = useState<Row[]>([]);
@@ -123,6 +128,11 @@ export function PaymentDialog({ open, onOpenChange, orderId, total, onPaid }: {
                       </Select>
                       {r.installments > 1 && <span className="text-xs text-muted-foreground">{r.installments}x de {money((parse(r.amount) || 0) / r.installments)}</span>}
                     </div>
+                  )}
+                  {m?.loyalty_credit && (
+                    <p className={cn("text-xs", (parse(r.amount) || 0) > credit ? "text-destructive" : "text-muted-foreground")}>
+                      Crédito disponível: {money(credit)}
+                    </p>
                   )}
                   {m?.kind === "dinheiro" && (
                     <div className="flex items-center gap-2 text-sm">

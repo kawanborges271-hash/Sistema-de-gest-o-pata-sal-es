@@ -27,6 +27,10 @@ const Pacotes = lazy(() => import("@/pages/Pacotes"));
 const Comissoes = lazy(() => import("@/pages/Comissoes"));
 const Crm = lazy(() => import("@/pages/Crm"));
 const Automacoes = lazy(() => import("@/pages/Automacoes"));
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const Marketing = lazy(() => import("@/pages/Marketing"));
+const Inteligencia = lazy(() => import("@/pages/Inteligencia"));
+const Fidelidade = lazy(() => import("@/pages/Fidelidade"));
 const AgendarPublico = lazy(() => import("@/pages/AgendarPublico"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
@@ -83,6 +87,18 @@ export default function App() {
                     </Route>
                     <Route element={<RequireFeature feature="automacoes" />}>
                       <Route path="/automacoes" element={<Automacoes />} />
+                    </Route>
+                    <Route element={<RequireFeature feature="dashboard" />}>
+                      <Route path="/dashboard" element={<Dashboard />} />
+                    </Route>
+                    <Route element={<RequireFeature feature="marketing" />}>
+                      <Route path="/marketing" element={<Marketing />} />
+                    </Route>
+                    <Route element={<RequireFeature feature="inteligencia" />}>
+                      <Route path="/inteligencia" element={<Inteligencia />} />
+                    </Route>
+                    <Route element={<RequireFeature feature="fidelidade" />}>
+                      <Route path="/fidelidade" element={<Fidelidade />} />
                     </Route>
                     <Route element={<RequireFeature feature="equipe" />}>
                       <Route path="/equipe" element={<Equipe />} />

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, CalendarDays, Gift, Package, Plus, Scissors, ShoppingBag, Trash2, X } from "lucide-react";
+import { ArrowLeft, CalendarDays, Coins, Gift, Package, Plus, Scissors, ShoppingBag, Trash2, Undo2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,11 +16,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useProfessionals } from "@/hooks/useCatalog";
 import { usePaymentMethods, useCancelOrder, useOrder, useRemoveOrderItem, useUpdateOrder, useUpdateOrderItem } from "@/hooks/useFinance";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useLoyaltyBalance, useLoyaltyRewards, useRedeemReward, useUndoRedemption } from "@/hooks/useLoyalty";
 import { PAYMENT_KIND_LABEL } from "@/lib/finance";
-import { money } from "@/lib/format";
+import { money, num } from "@/lib/format";
 import { errorMessage } from "@/lib/errors";
 import { fmt } from "@/lib/tz";
-import type { OrderItem, OrderItemKind } from "@/lib/types";
+import type { LoyaltyReward, OrderItem, OrderItemKind } from "@/lib/types";
 
 const KIND_ICON: Record<OrderItemKind, typeof Scissors> = { servico: Scissors, produto: ShoppingBag, pacote: Package };
 const parse = (v: string) => Number(v.replace(",", "."));
@@ -28,14 +29,26 @@ const parse = (v: string) => Number(v.replace(",", "."));
 const brl = (v: number) => v.toFixed(2).replace(".", ",");
 
 /** Linha editável enquanto a comanda está aberta (preço "a partir de", quantidade, desconto). */
-function ItemRow({ item, proName, editable }: { item: OrderItem; proName: string | null; editable: boolean }) {
+function ItemRow({ item, proName, editable, reward, points }: {
+  item: OrderItem;
+  proName: string | null;
+  editable: boolean;
+  /** Prêmio de fidelidade para este serviço, quando existe. */
+  reward?: LoyaltyReward;
+  /** Saldo de pontos da cliente (null = sem cliente ou programa desligado). */
+  points: number | null;
+}) {
   const update = useUpdateOrderItem();
   const remove = useRemoveOrderItem();
+  const redeem = useRedeemReward();
+  const undo = useUndoRedemption();
   const [qty, setQty] = useState(String(item.quantity));
   const [price, setPrice] = useState(String(item.unit_price));
   const [disc, setDisc] = useState(String(item.discount_amount));
   const Icon = KIND_ICON[item.kind];
   const fromPackage = Boolean(item.client_package_balance_id);
+  const fromPoints = Boolean(item.loyalty_reward_id);
+  const canRedeem = editable && !fromPackage && !fromPoints && reward && points !== null && Number(item.quantity) === 1;
 
   useEffect(() => {
     setQty(String(Number(item.quantity)));
@@ -55,10 +68,29 @@ function ItemRow({ item, proName, editable }: { item: OrderItem; proName: string
           <div className="text-xs text-muted-foreground">
             {proName ?? (item.kind === "pacote" ? "Pacote de sessões" : "Sem profissional")}
             {fromPackage && " · sessão do pacote"}
+            {fromPoints && " · pago com pontos"}
           </div>
+          {canRedeem && (
+            <button type="button" disabled={points! < reward!.points_cost || redeem.isPending}
+              title={points! < reward!.points_cost ? `A cliente tem ${num(points)} pontos` : undefined}
+              className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-copper hover:underline disabled:cursor-not-allowed disabled:text-muted-foreground disabled:no-underline"
+              onClick={() => redeem.mutate({ itemId: item.id, rewardId: reward!.id }, {
+                onSuccess: () => toast.success(`${num(reward!.points_cost)} pontos usados`),
+                onError: (err) => toast.error(errorMessage(err)),
+              })}>
+              <Coins className="h-3.5 w-3.5" /> Resgatar com {num(reward!.points_cost)} pontos
+            </button>
+          )}
+          {fromPoints && editable && (
+            <button type="button" disabled={undo.isPending}
+              className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground hover:underline"
+              onClick={() => undo.mutate(item.id, { onSuccess: () => toast.success("Resgate desfeito, os pontos voltaram"), onError: (err) => toast.error(errorMessage(err)) })}>
+              <Undo2 className="h-3.5 w-3.5" /> Desfazer resgate
+            </button>
+          )}
         </div>
       </div>
-      {editable && !fromPackage ? (
+      {editable && !fromPackage && !fromPoints ? (
         <div className="flex items-end gap-2 pl-11 sm:pl-0">
           {item.kind !== "pacote" && (
             <div className="w-16">
@@ -88,7 +120,7 @@ function ItemRow({ item, proName, editable }: { item: OrderItem; proName: string
           <span className="text-muted-foreground">{Number(item.quantity) !== 1 && `${Number(item.quantity)} × `}{money(Number(item.unit_price))}</span>
           {Number(item.discount_amount) > 0 && <span className="text-xs text-muted-foreground">− {money(Number(item.discount_amount))}</span>}
           <span className="w-24 text-right font-medium">{money(Number(item.total))}</span>
-          {editable && (
+          {editable && !fromPoints && (
             <Button size="icon" variant="ghost" className="h-8 w-8" aria-label="Remover item"
               onClick={() => remove.mutate(item.id, { onError: (err) => toast.error(errorMessage(err)) })}>
               <Trash2 className="h-4 w-4" />
@@ -111,6 +143,9 @@ export default function ComandaDetalhe() {
   const { data: methods = [] } = usePaymentMethods();
   const updateOrder = useUpdateOrder();
   const cancel = useCancelOrder();
+  const loyaltyOn = Boolean(salon!.loyalty_enabled || salon!.referral_enabled);
+  const { data: balance } = useLoyaltyBalance(loyaltyOn ? o?.client_id : null);
+  const { data: rewards = [] } = useLoyaltyRewards();
 
   const [adding, setAdding] = useState<OrderItemKind | null>(null);
   const [paying, setPaying] = useState(false);
@@ -212,7 +247,11 @@ export default function ComandaDetalhe() {
               {isOpen && <div className="mt-3"><Button size="sm" onClick={() => setAdding("servico")}><Plus className="mr-1 h-4 w-4" /> Lançar serviço</Button></div>}
             </div>
           ) : (
-            o.items.map((i) => <ItemRow key={i.id} item={i} proName={proName(i.professional_id)} editable={isOpen} />)
+            o.items.map((i) => (
+              <ItemRow key={i.id} item={i} proName={proName(i.professional_id)} editable={isOpen}
+                reward={salon!.loyalty_enabled && i.kind === "servico" ? rewards.find((r) => r.active && r.service_id === i.service_id) : undefined}
+                points={salon!.loyalty_enabled && o.client_id && balance ? balance.points : null} />
+            ))
           )}
         </SectionCard>
 
@@ -246,6 +285,18 @@ export default function ComandaDetalhe() {
             )}
           </SectionCard>
 
+          {loyaltyOn && o.client_id && balance && (
+            <SectionCard>
+              <div className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-1.5 text-muted-foreground"><Coins className="h-4 w-4 text-copper" />Fidelidade</span>
+                <span className="text-right">
+                  {salon!.loyalty_enabled && <span className="block font-semibold tabular-nums">{num(balance.points)} pontos</span>}
+                  {Number(balance.credit) > 0 && <span className="block text-xs text-muted-foreground">{money(Number(balance.credit))} de crédito de indicação</span>}
+                </span>
+              </div>
+            </SectionCard>
+          )}
+
           {o.payments.length > 0 && (
             <SectionCard title="Pagamentos">
               <div className="space-y-2 text-sm">
@@ -277,7 +328,7 @@ export default function ComandaDetalhe() {
         <AddItemDialog open={Boolean(adding)} onOpenChange={(v) => !v && setAdding(null)} orderId={o.id} clientId={o.client_id}
           kind={adding} reservedBalances={reserved} />
       )}
-      <PaymentDialog open={paying} onOpenChange={setPaying} orderId={o.id} total={Number(o.total)} onPaid={() => undefined} />
+      <PaymentDialog open={paying} onOpenChange={setPaying} orderId={o.id} clientId={o.client_id} total={Number(o.total)} onPaid={() => undefined} />
 
       <Dialog open={cancelling} onOpenChange={setCancelling}>
         <DialogContent className="sm:max-w-md">
