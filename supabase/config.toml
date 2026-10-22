@@ -309,3 +309,14 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 
 [functions.team-invite]
 verify_jwt = true
+
+# A Z-API não manda JWT: o webhook se autentica pelo segredo da URL
+[functions.whatsapp-webhook]
+verify_jwt = false
+
+# Chamada pelo pg_cron com o cabeçalho x-cron-secret
+[functions.whatsapp-dispatch]
+verify_jwt = false
+
+[functions.whatsapp-connect]
+verify_jwt = true
