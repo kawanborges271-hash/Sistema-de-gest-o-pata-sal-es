@@ -1,10 +1,10 @@
 import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { RequireAuth, RequireFeature, RequirePlatformAdmin, RequireSalon } from "@/components/auth/guards";
+import { HomeRedirect, RequireAuth, RequireFeature, RequirePlatformAdmin, RequireSalon } from "@/components/auth/guards";
 import AppLayout from "@/components/layout/AppLayout";
 import { FullPageLoader } from "@/components/common/FullPageLoader";
 const Login = lazy(() => import("@/pages/Login"));
@@ -60,7 +60,7 @@ export default function App() {
                 </Route>
                 <Route element={<RequireSalon />}>
                   <Route element={<AppLayout />}>
-                    <Route path="/" element={<Navigate to="/agenda" replace />} />
+                    <Route path="/" element={<HomeRedirect />} />
                     <Route path="/agenda" element={<Agenda />} />
                     <Route path="/clientes" element={<Clientes />} />
                     <Route path="/clientes/:id" element={<ClienteDetalhe />} />

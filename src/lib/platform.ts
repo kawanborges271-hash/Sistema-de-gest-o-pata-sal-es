@@ -18,6 +18,7 @@ export const AUDIT_ACTION_LABEL: Record<string, string> = {
   mover_usuario: "Usuário movido",
   adicionar_usuario: "Acesso dado a outro salão",
   ver_operacao: "Operação vista pelo suporte",
+  criar_demo: "Salão de demonstração criado",
 };
 
 /** "2 de 3" ou "2 · sem limite" */

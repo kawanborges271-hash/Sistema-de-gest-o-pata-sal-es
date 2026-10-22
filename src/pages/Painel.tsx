@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { ArrowLeft, Building2, CalendarCheck, Copy, LogOut, MessageCircle, Plus, Search, ShieldCheck, UserPlus, Users } from "lucide-react";
+import { ArrowLeft, Building2, CalendarCheck, Copy, LogOut, MessageCircle, Plus, Presentation, Search, ShieldCheck, UserPlus, Users } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { PageHeader } from "@/components/common/PageHeader";
 import { KpiCard } from "@/components/common/KpiCard";
@@ -15,6 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { errorMessage } from "@/lib/errors";
 import { usePlatformAudit, usePlatformOverview, usePlatformSalons, usePlatformUserSearch } from "@/hooks/usePlatform";
 import { ROLE_LABEL } from "@/lib/agenda";
 import { num, timeAgo } from "@/lib/format";
@@ -26,7 +28,22 @@ import type { PlatformSalon } from "@/lib/types";
 type Filter = "todos" | "ativos" | "suspensos";
 
 export default function Painel() {
-  const { profile, user, memberships, signOut } = useAuth();
+  const { profile, user, memberships, signOut, switchSalon } = useAuth();
+  const navigate = useNavigate();
+  const [openingDemo, setOpeningDemo] = useState(false);
+  const openDemo = async () => {
+    setOpeningDemo(true);
+    try {
+      const { data, error } = await supabase.rpc("platform_demo_salon");
+      if (error) throw error;
+      await switchSalon(data as string);
+      navigate("/dashboard");
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setOpeningDemo(false);
+    }
+  };
   const { data: overview } = usePlatformOverview();
   const { data: salons = [], isLoading } = usePlatformSalons();
   const [term, setTerm] = useState("");
@@ -63,7 +80,14 @@ export default function Painel() {
           eyebrow="Plataforma · Super admin"
           title="Salões, planos e acesso"
           subtitle="Uso de cada salão em contagens e datas. Faturamento, caixa e comissões dos salões não aparecem aqui."
-          actions={<Button onClick={() => setCreating(true)}><Plus className="mr-1.5 h-4 w-4" />Novo salão</Button>}
+          actions={
+            <>
+              <Button variant="outline" onClick={openDemo} disabled={openingDemo}>
+                <Presentation className="mr-1.5 h-4 w-4" />{openingDemo ? "Abrindo…" : "Salão de demonstração"}
+              </Button>
+              <Button onClick={() => setCreating(true)}><Plus className="mr-1.5 h-4 w-4" />Novo salão</Button>
+            </>
+          }
         />
 
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">

@@ -273,3 +273,15 @@ select pg_temp.check(not exists (select 1 from public.clients where salon_id = :
                      and not exists (select 1 from public.salon_members where salon_id = :'sa')
                      and not exists (select 1 from public.audit_log where salon_id = :'sa'),
                      'salão apagado leva clientes, equipe e histórico');
+
+-- Salão de demonstração do super admin: criado uma vez, com dados, e operado sem modo leitura
+select pg_temp.as_user(:'suporte');
+select public.platform_demo_salon() as demo \gset
+select pg_temp.check(public.platform_demo_salon() = :'demo', 'demonstração reaproveita o mesmo salão');
+select pg_temp.check((select count(*) from public.clients where salon_id = :'demo') > 0, 'demonstração vem com dados');
+update public.clients set notes = 'editado na demo' where salon_id = :'demo';
+select pg_temp.check((select count(*) from public.clients where salon_id = :'demo' and notes = 'editado na demo') > 0,
+                     'super admin altera dados na demonstração');
+select pg_temp.as_user(:'admin');
+select pg_temp.expect_error('select public.platform_demo_salon()', '42501');
+select pg_temp.as_postgres();

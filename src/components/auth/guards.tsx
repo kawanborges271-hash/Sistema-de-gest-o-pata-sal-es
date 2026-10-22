@@ -37,3 +37,9 @@ export function RequirePlatformAdmin() {
   if (!isPlatformAdmin) return <Navigate to="/" replace />;
   return <Outlet />;
 }
+
+/** Entrada: super admin cai no Painel; equipe do salão, na agenda. */
+export function HomeRedirect() {
+  const { isPlatformAdmin, readOnly } = useAuth();
+  return <Navigate to={isPlatformAdmin && !readOnly ? "/painel" : "/agenda"} replace />;
+}
