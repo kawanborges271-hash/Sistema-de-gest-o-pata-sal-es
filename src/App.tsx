@@ -4,7 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { RequireAuth, RequireFeature, RequireSalon } from "@/components/auth/guards";
+import { RequireAuth, RequireFeature, RequirePlatformAdmin, RequireSalon } from "@/components/auth/guards";
 import AppLayout from "@/components/layout/AppLayout";
 import { FullPageLoader } from "@/components/common/FullPageLoader";
 const Login = lazy(() => import("@/pages/Login"));
@@ -31,6 +31,7 @@ const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const Marketing = lazy(() => import("@/pages/Marketing"));
 const Inteligencia = lazy(() => import("@/pages/Inteligencia"));
 const Fidelidade = lazy(() => import("@/pages/Fidelidade"));
+const Painel = lazy(() => import("@/pages/Painel"));
 const AgendarPublico = lazy(() => import("@/pages/AgendarPublico"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
@@ -54,6 +55,9 @@ export default function App() {
               <Route path="/agendar/:slug" element={<AgendarPublico />} />
               <Route element={<RequireAuth />}>
                 <Route path="/onboarding" element={<Onboarding />} />
+                <Route element={<RequirePlatformAdmin />}>
+                  <Route path="/painel" element={<Painel />} />
+                </Route>
                 <Route element={<RequireSalon />}>
                   <Route element={<AppLayout />}>
                     <Route path="/" element={<Navigate to="/agenda" replace />} />

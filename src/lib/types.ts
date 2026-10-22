@@ -19,6 +19,8 @@ export type Salon = {
   commission_deduct_product_cost: boolean;
   onboarding_completed: boolean;
   suspended_at: string | null;
+  suspended_reason: string | null;
+  plan_id: string;
   app_url: string | null;
   google_review_url: string | null;
   wa_window_start: string;
@@ -740,4 +742,91 @@ export type LoyaltySummary = {
   redeemed_30d: number;
   referrals_total: number;
   referrals_converted: number;
+};
+
+// ---------------------------------------------------------------------
+// Fase 5: Painel SaaS
+// ---------------------------------------------------------------------
+export type Plan = {
+  id: string;
+  name: string;
+  max_professionals: number | null;
+  max_messages_month: number | null;
+  sort_order: number;
+};
+
+export type PlanUsage = {
+  plan_id: string;
+  plan_name: string;
+  max_professionals: number | null;
+  professionals: number;
+  max_messages_month: number | null;
+  messages_month: number;
+};
+
+export type PlatformOverview = {
+  salons: number;
+  active: number;
+  suspended: number;
+  new_30d: number;
+  users: number;
+  by_plan: Record<string, number>;
+  whatsapp_connected: number;
+  appointments_30d: number;
+};
+
+/** Uso de um salão no painel: só contagens e datas, nunca valores. */
+export type PlatformSalon = {
+  id: string;
+  name: string;
+  slug: string;
+  plan_id: string;
+  plan_name: string;
+  created_at: string;
+  suspended_at: string | null;
+  suspended_reason: string | null;
+  onboarding_completed: boolean;
+  owner_name: string | null;
+  owner_email: string | null;
+  team: number;
+  professionals: number;
+  max_professionals: number | null;
+  clients: number;
+  appointments_30d: number;
+  leads_30d: number;
+  messages_month: number;
+  max_messages_month: number | null;
+  whatsapp_status: "pendente" | "conectado" | "desconectado" | "erro" | "desligado" | null;
+  online_booking: boolean;
+  last_activity_at: string | null;
+  last_login_at: string | null;
+};
+
+export type PlatformMember = {
+  member_id: string;
+  user_id: string;
+  full_name: string | null;
+  email: string | null;
+  role: SalonRole;
+  active: boolean;
+  joined_at: string;
+  last_sign_in_at: string | null;
+};
+
+export type PlatformUser = {
+  user_id: string;
+  full_name: string | null;
+  email: string;
+  last_sign_in_at: string | null;
+  memberships: { salon_id: string; salon_name: string; role: SalonRole; active: boolean }[];
+};
+
+export type PlatformAuditRow = {
+  id: number;
+  created_at: string;
+  action: string;
+  actor_name: string | null;
+  salon_name: string | null;
+  target_email: string | null;
+  details: Record<string, unknown>;
 };

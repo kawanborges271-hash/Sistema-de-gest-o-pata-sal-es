@@ -23,7 +23,7 @@ import type { BusinessHours, SalonRole } from "@/lib/types";
 const STEPS = ["Salão", "Contato e endereço", "Horário", "Equipe", "Começar"];
 
 export default function Onboarding() {
-  const { salon, role, loading, refresh, profile } = useAuth();
+  const { salon, role, loading, refresh, profile, salonBlocked } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
@@ -44,6 +44,8 @@ export default function Onboarding() {
 
   if (loading) return <FullPageLoader />;
   const token = pendingInvite();
+  // salão suspenso: a tela de suspensão (em RequireSalon) explica o que fazer
+  if (!salon && salonBlocked) return <Navigate to="/agenda" replace />;
   if (!salon && token) return <Navigate to={`/convite/${token}`} replace />;
   if (salon && (salon.onboarding_completed || role !== "admin")) return <Navigate to="/agenda" replace />;
 

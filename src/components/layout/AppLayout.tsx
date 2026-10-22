@@ -1,6 +1,6 @@
-import { Outlet } from "react-router-dom";
+import { Link, Outlet } from "react-router-dom";
 import { useEffect } from "react";
-import { Check, LogOut } from "lucide-react";
+import { Check, LogOut, ShieldCheck } from "lucide-react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -15,7 +15,7 @@ import { GlobalSearch } from "./GlobalSearch";
 import { NotificationBell } from "./NotificationBell";
 
 export default function AppLayout() {
-  const { profile, user, salon, role, memberships, signOut, switchSalon } = useAuth();
+  const { profile, user, salon, role, memberships, isPlatformAdmin, signOut, switchSalon } = useAuth();
   const name = profile?.full_name || user?.email?.split("@")[0] || "Usuário";
 
   // Links que saem no WhatsApp ({link_agendamento}) usam o endereço onde o sistema está publicado
@@ -66,6 +66,14 @@ export default function AppLayout() {
                           {m.salon_id === salon?.id && <Check className="ml-auto h-4 w-4" />}
                         </DropdownMenuItem>
                       ))}
+                    </>
+                  )}
+                  {isPlatformAdmin && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link to="/painel"><ShieldCheck className="mr-2 h-4 w-4" /> Painel SaaS</Link>
+                      </DropdownMenuItem>
                     </>
                   )}
                   <DropdownMenuSeparator />
