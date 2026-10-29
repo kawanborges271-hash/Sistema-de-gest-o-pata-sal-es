@@ -12,6 +12,8 @@ import { ROLE_LABEL } from "@/lib/agenda";
 import { initials } from "@/lib/format";
 import { AppSidebar } from "./AppSidebar";
 import { GlobalSearch } from "./GlobalSearch";
+import { InstallAppDialog, InstallAppItem } from "./InstallApp";
+import { MobileNav } from "./MobileNav";
 import { NotificationBell } from "./NotificationBell";
 
 export default function AppLayout() {
@@ -32,7 +34,7 @@ export default function AppLayout() {
       <div className="flex min-h-screen w-full bg-background">
         <AppSidebar />
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-background/85 px-4 backdrop-blur md:px-6">
+          <header className="sticky top-0 z-30 flex h-[calc(4rem+env(safe-area-inset-top))] items-center gap-3 border-b border-border bg-background/85 px-4 pt-[env(safe-area-inset-top)] backdrop-blur md:px-6">
             <SidebarTrigger className="text-foreground/70" />
             <GlobalSearch />
             <div className="ml-auto flex items-center gap-2">
@@ -78,6 +80,7 @@ export default function AppLayout() {
                     </>
                   )}
                   <DropdownMenuSeparator />
+                  <InstallAppItem />
                   <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
                     <LogOut className="mr-2 h-4 w-4" /> Sair
                   </DropdownMenuItem>
@@ -104,9 +107,11 @@ export default function AppLayout() {
               </button>
             </div>
           )}
-          <main className="flex-1 px-4 py-6 md:px-8 lg:px-10 lg:py-8">
+          <main className="flex-1 px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom))] pt-6 md:px-8 md:pb-6 lg:px-10 lg:py-8">
             <Outlet />
           </main>
+          <MobileNav />
+          <InstallAppDialog />
         </div>
       </div>
     </SidebarProvider>
