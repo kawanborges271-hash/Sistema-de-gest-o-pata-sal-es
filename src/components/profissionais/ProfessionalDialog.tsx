@@ -51,7 +51,7 @@ export function ProfessionalDialog({ open, onOpenChange, professional }: {
       setForm({
         name: professional.name, role_title: professional.role_title ?? "", phone: professional.phone ?? "",
         email: professional.email ?? "", color: professional.color,
-        default_commission_pct: Number(professional.default_commission_pct), active: professional.active, user_id: professional.user_id,
+        default_commission_pct: Number(professional.default_commission_pct ?? 0), active: professional.active, user_id: professional.user_id,
       });
       setSelected(Object.fromEntries(
         allPs.filter((p) => p.professional_id === professional.id)

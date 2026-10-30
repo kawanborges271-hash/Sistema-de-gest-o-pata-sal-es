@@ -1,15 +1,19 @@
 import { NavLink } from "react-router-dom";
-import { CalendarDays, Menu, Receipt, Users, Wallet, type LucideIcon } from "lucide-react";
+import { CalendarDays, ChartNoAxesColumn, Menu, Percent, Receipt, Users, Wallet, type LucideIcon } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { can, type Feature } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
 
+// Cada papel fica com as 4 primeiras que pode abrir: dono e recepção, a operação do dia;
+// profissional, a própria agenda, o próprio painel, as clientes dele e a comissão.
 const TABS: { title: string; url: string; icon: LucideIcon; feature: Feature }[] = [
   { title: "Agenda", url: "/agenda", icon: CalendarDays, feature: "agenda" },
+  { title: "Meu painel", url: "/meu-painel", icon: ChartNoAxesColumn, feature: "meu_painel" },
   { title: "Clientes", url: "/clientes", icon: Users, feature: "clientes" },
   { title: "Comandas", url: "/comandas", icon: Receipt, feature: "comandas" },
   { title: "Caixa", url: "/caixa", icon: Wallet, feature: "caixa" },
+  { title: "Comissão", url: "/comissoes", icon: Percent, feature: "comissoes" },
 ];
 
 const tabClass = "flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium";
@@ -18,7 +22,7 @@ const tabClass = "flex flex-1 flex-col items-center justify-center gap-0.5 text-
 export function MobileNav() {
   const { role } = useAuth();
   const { setOpenMobile } = useSidebar();
-  const tabs = TABS.filter((t) => can(role, t.feature));
+  const tabs = TABS.filter((t) => can(role, t.feature)).slice(0, 4);
 
   return (
     <nav

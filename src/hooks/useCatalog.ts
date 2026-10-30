@@ -36,25 +36,64 @@ export function useServices() {
   });
 }
 
+// O percentual de comissão de cada profissional não vem nestas colunas: só o
+// administrador lê, pela função commission_rates (atualização 020).
+const PROFESSIONAL_COLUMNS = "id, salon_id, name, role_title, phone, email, color, user_id, sort_order, active";
+const PROFESSIONAL_SERVICE_COLUMNS = "salon_id, professional_id, service_id, price, duration_minutes";
+
+type CommissionRates = {
+  professionals: { id: string; default_commission_pct: number }[];
+  services: { professional_id: string; service_id: string; commission_pct: number | null }[];
+};
+
+async function commissionRates(salonId: string): Promise<CommissionRates> {
+  const { data, error } = await supabase.rpc("commission_rates", { p_salon_id: salonId });
+  if (!error) return data as CommissionRates;
+  // Banco ainda sem a atualização 020: as colunas continuam abertas na tabela
+  if ((error as { code?: string }).code === "PGRST202") {
+    const [professionals, services] = await Promise.all([
+      unwrap<CommissionRates["professionals"]>(supabase.from("professionals").select("id, default_commission_pct").eq("salon_id", salonId)),
+      unwrap<CommissionRates["services"]>(supabase.from("professional_services").select("professional_id, service_id, commission_pct").eq("salon_id", salonId)),
+    ]);
+    return { professionals, services };
+  }
+  throw error;
+}
+
 export function useProfessionals() {
   const salonId = useSalonId();
+  const isAdmin = useAuth().role === "admin";
   return useQuery({
-    queryKey: ["professionals", salonId],
+    queryKey: ["professionals", salonId, isAdmin],
     enabled: Boolean(salonId),
-    queryFn: () =>
-      unwrap<Professional[]>(
-        supabase.from("professionals").select("*").eq("salon_id", salonId!).order("sort_order").order("name"),
-      ),
+    queryFn: async () => {
+      const [list, rates] = await Promise.all([
+        unwrap<Professional[]>(
+          supabase.from("professionals").select(PROFESSIONAL_COLUMNS).eq("salon_id", salonId!).order("sort_order").order("name"),
+        ),
+        isAdmin ? commissionRates(salonId!) : null,
+      ]);
+      if (!rates) return list;
+      const pct = new Map(rates.professionals.map((r) => [r.id, Number(r.default_commission_pct)]));
+      return list.map((p) => ({ ...p, default_commission_pct: pct.get(p.id) ?? 0 }));
+    },
   });
 }
 
 export function useProfessionalServices() {
   const salonId = useSalonId();
+  const isAdmin = useAuth().role === "admin";
   return useQuery({
-    queryKey: ["professional_services", salonId],
+    queryKey: ["professional_services", salonId, isAdmin],
     enabled: Boolean(salonId),
-    queryFn: () =>
-      unwrap<ProfessionalService[]>(supabase.from("professional_services").select("*").eq("salon_id", salonId!)),
+    queryFn: async () => {
+      const [list, rates] = await Promise.all([
+        unwrap<Omit<ProfessionalService, "commission_pct">[]>(supabase.from("professional_services").select(PROFESSIONAL_SERVICE_COLUMNS).eq("salon_id", salonId!)),
+        isAdmin ? commissionRates(salonId!) : null,
+      ]);
+      const pct = new Map((rates?.services ?? []).map((r) => [`${r.professional_id}:${r.service_id}`, r.commission_pct]));
+      return list.map((s): ProfessionalService => ({ ...s, commission_pct: pct.get(`${s.professional_id}:${s.service_id}`) ?? null }));
+    },
   });
 }
 

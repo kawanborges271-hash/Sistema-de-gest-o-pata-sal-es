@@ -1,5 +1,5 @@
 import {
-  ShieldCheck, Boxes, Brain, CalendarDays, Gift, KanbanSquare, LayoutDashboard, Megaphone, MessageCircle,
+  ShieldCheck, Boxes, Brain, ChartNoAxesColumn, CalendarDays, Gift, KanbanSquare, LayoutDashboard, Megaphone, MessageCircle,
   Package, Percent, Receipt, Scissors, Settings, UserCog, Users, Wallet, type LucideIcon,
 } from "lucide-react";
 import type { Feature } from "@/lib/permissions";
@@ -19,6 +19,7 @@ export const NAV: NavGroup[] = [
   {
     label: "Vendas",
     items: [
+      { title: "Meu painel", url: "/meu-painel", icon: ChartNoAxesColumn, feature: "meu_painel" },
       { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, feature: "dashboard" },
       { title: "Marketing & Vendas", url: "/marketing", icon: Megaphone, feature: "marketing" },
       { title: "Inteligência", url: "/inteligencia", icon: Brain, feature: "inteligencia" },

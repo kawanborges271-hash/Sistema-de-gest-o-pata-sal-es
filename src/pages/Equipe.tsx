@@ -8,17 +8,19 @@ import { Switch } from "@/components/ui/switch";
 import { PageHeader } from "@/components/common/PageHeader";
 import { SectionCard } from "@/components/common/SectionCard";
 import { useAuth } from "@/contexts/AuthContext";
-import { useInvitations, useInvite, useMembers, useRevokeInvite, useUpdateMember } from "@/hooks/useTeam";
+import { useInvitations, useInvite, useLinkProfessional, useMembers, useRevokeInvite, useUpdateMember } from "@/hooks/useTeam";
+import { useProfessionals } from "@/hooks/useCatalog";
 import { ROLE_LABEL } from "@/lib/agenda";
 import { errorMessage } from "@/lib/errors";
 import { initials } from "@/lib/format";
 import { fmtDate } from "@/lib/tz";
 import type { SalonRole } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 const ROLE_HINT: Record<SalonRole, string> = {
-  admin: "Tudo, inclusive financeiro, equipe e configurações.",
-  recepcao: "Agenda, clientes e (na Fase 2) comandas e caixa. Sem relatórios financeiros nem comissões dos outros.",
-  profissional: "Só a própria agenda, os clientes que atendeu e (na Fase 2) a própria comissão.",
+  admin: "Tudo: faturamento do salão e de cada pessoa, comissões, marketing, equipe e configurações.",
+  recepcao: "Agenda de todos, clientes, comandas, caixa, CRM e mensagens. Não vê dashboard, faturamento por pessoa nem comissões.",
+  profissional: "Só o que é dele: a própria agenda, as clientes que atendeu, o próprio faturamento e comissão, clientes para chamar de volta e as mensagens automáticas das clientes dele.",
 };
 
 export default function Equipe() {
@@ -29,6 +31,8 @@ export default function Equipe() {
   const invite = useInvite();
   const revoke = useRevokeInvite();
   const update = useUpdateMember();
+  const link = useLinkProfessional();
+  const { data: professionals = [] } = useProfessionals();
   const [form, setForm] = useState({ email: "", full_name: "", role: "profissional" as SalonRole });
   const [lastLink, setLastLink] = useState<string | null>(null);
 
@@ -64,10 +68,19 @@ export default function Equipe() {
     }
   };
 
+  const relink = async (userId: string, professionalId: string | null) => {
+    try {
+      await link.mutateAsync({ userId, professionalId });
+      toast.success(professionalId ? "Login ligado à agenda" : "Login desligado da agenda");
+    } catch (err) {
+      toast.error(errorMessage(err));
+    }
+  };
+
   return (
     <div>
       <PageHeader eyebrow="Gestão · Equipe" title="Quem acessa o sistema e o que cada um vê."
-        subtitle="As permissões valem no banco de dados, não só no menu: um profissional não consegue ver a agenda dos colegas nem por fora da tela." />
+        subtitle="As permissões valem no banco de dados, não só no menu: um profissional não consegue ver a agenda, o faturamento nem a comissão dos colegas, nem por fora da tela. Ligue o login de quem atende à agenda dele para ele ver os próprios números." />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
         <div className="space-y-6">
@@ -75,6 +88,7 @@ export default function Equipe() {
             <div className="divide-y divide-border">
               {members.map((m) => {
                 const self = m.user_id === user?.id;
+                const linked = professionals.find((p) => p.user_id === m.user_id);
                 return (
                   <div key={m.id} className="flex flex-wrap items-center gap-3 py-3">
                     <span className="grid h-9 w-9 place-items-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">{initials(m.profile?.full_name || m.profile?.email)}</span>
@@ -85,6 +99,17 @@ export default function Equipe() {
                     <Select value={m.role} onValueChange={(v) => change(m.id, { role: v as SalonRole })} disabled={self}>
                       <SelectTrigger className="h-9 w-40"><SelectValue /></SelectTrigger>
                       <SelectContent>{(Object.keys(ROLE_LABEL) as SalonRole[]).map((r) => <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>)}</SelectContent>
+                    </Select>
+                    <Select value={linked?.id ?? "none"} onValueChange={(v) => relink(m.user_id, v === "none" ? null : v)}>
+                      <SelectTrigger className={cn("h-9 w-48", !linked && "border-destructive/60 text-destructive")} aria-label="Cadastro na agenda">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">{m.role === "profissional" ? "Ligar à agenda de…" : "Não atende"}</SelectItem>
+                        {professionals.filter((p) => !p.user_id || p.user_id === m.user_id).map((p) => (
+                          <SelectItem key={p.id} value={p.id}>Agenda de {p.name}</SelectItem>
+                        ))}
+                      </SelectContent>
                     </Select>
                     <label className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Switch checked={m.active} disabled={self} onCheckedChange={(v) => change(m.id, { active: v })} /> {m.active ? "Ativo" : "Sem acesso"}
@@ -132,6 +157,9 @@ export default function Equipe() {
                 <SelectContent>{(Object.keys(ROLE_LABEL) as SalonRole[]).map((r) => <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>)}</SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">{ROLE_HINT[form.role]}</p>
+              {form.role === "profissional" && (
+                <p className="text-xs text-muted-foreground">Use o mesmo e-mail do cadastro em Profissionais e o login já entra ligado à agenda dele. Se não, ligue aqui em Membros depois que a pessoa aceitar.</p>
+              )}
               <Button className="w-full" onClick={send} disabled={invite.isPending}><MailPlus className="mr-1 h-4 w-4" /> {invite.isPending ? "Enviando…" : "Enviar convite"}</Button>
               {lastLink && (
                 <Button variant="outline" className="w-full" onClick={() => copy(lastLink)}><Copy className="mr-1 h-4 w-4" /> Copiar link do convite</Button>

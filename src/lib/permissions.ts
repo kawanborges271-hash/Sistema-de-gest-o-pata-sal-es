@@ -31,7 +31,8 @@ export type Feature =
   | "marketing"
   | "inteligencia"
   | "fidelidade"             // saldos, extrato e resgate na comanda
-  | "fidelidade.editar";     // regras, prêmios e ajustes
+  | "fidelidade.editar"      // regras, prêmios e ajustes
+  | "meu_painel";            // resultado do próprio profissional (o admin abre o de qualquer um pelo dashboard)
 
 const MATRIX: Record<Feature, SalonRole[]> = {
   agenda: ["admin", "recepcao", "profissional"],
@@ -61,6 +62,7 @@ const MATRIX: Record<Feature, SalonRole[]> = {
   inteligencia: ["admin"],
   fidelidade: ["admin", "recepcao"],
   "fidelidade.editar": ["admin"],
+  meu_painel: ["profissional"],
 };
 
 export function can(role: SalonRole | null, feature: Feature): boolean {
