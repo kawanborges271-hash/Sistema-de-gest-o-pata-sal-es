@@ -66,7 +66,7 @@ export default function Profissionais() {
                   ))}
                 </div>
                 <div className="mt-3 text-xs text-muted-foreground">
-                  {ps.filter((x) => x.professional_id === p.id).length} serviços · {num(Math.round(weeklyHours(p.id)))}h/semana · comissão {num(Number(p.default_commission_pct))}%
+                  {ps.filter((x) => x.professional_id === p.id).length} serviços · {num(Math.round(weeklyHours(p.id)))}h/semana{p.default_commission_pct !== undefined && ` · comissão ${num(Number(p.default_commission_pct))}%`}
                   {p.user_id && " · tem login"}
                 </div>
               </button>

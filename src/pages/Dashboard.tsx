@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { BadgeDollarSign, CalendarCheck, Cake, CalendarClock, Gauge, Package, Receipt, Repeat, UserPlus, Users, Wallet, UserCheck } from "lucide-react";
@@ -6,38 +5,21 @@ import { PageHeader } from "@/components/common/PageHeader";
 import { SectionCard } from "@/components/common/SectionCard";
 import { Delta, MetricCard } from "@/components/insights/shared";
 import { pct } from "@/lib/insights";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Input } from "@/components/ui/input";
+import { PeriodPicker, dm, usePeriod } from "@/components/insights/PeriodPicker";
+import { TeamResults } from "@/components/insights/TeamResults";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDashboard } from "@/hooks/useInsights";
 import { formatPhone, money, num } from "@/lib/format";
-import { addDaysKey, fmt, todayKey } from "@/lib/tz";
+import { fmt } from "@/lib/tz";
 import { STATUS_LABEL } from "@/lib/agenda";
 
-type Preset = "7d" | "30d" | "mes" | "90d" | "custom";
-const PRESETS: { value: Preset; label: string }[] = [
-  { value: "7d", label: "7 dias" },
-  { value: "30d", label: "30 dias" },
-  { value: "mes", label: "Este mês" },
-  { value: "90d", label: "90 dias" },
-  { value: "custom", label: "Escolher" },
-];
-
-const dm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
 const hours = (h: number) => `${num(Math.round(h))} h`;
 
 export default function Dashboard() {
   const { salon } = useAuth();
   const tz = salon!.timezone;
-  const today = todayKey(tz);
-  const [preset, setPreset] = useState<Preset>("30d");
-  const [custom, setCustom] = useState({ from: addDaysKey(today, -29), to: today });
-  const [from, to] =
-    preset === "7d" ? [addDaysKey(today, -6), today]
-    : preset === "30d" ? [addDaysKey(today, -29), today]
-    : preset === "90d" ? [addDaysKey(today, -89), today]
-    : preset === "mes" ? [`${today.slice(0, 8)}01`, today]
-    : [custom.from, custom.to];
+  const period = usePeriod(tz);
+  const { from, to } = period;
   const { data, isLoading, error } = useDashboard(from, to);
   const c = data?.current;
   const p = data?.previous;
@@ -48,20 +30,7 @@ export default function Dashboard() {
         eyebrow="Vendas · Dashboard"
         title="Como o salão está indo"
         subtitle="Cada número tem a fórmula escrita embaixo e a comparação com o período anterior do mesmo tamanho."
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <ToggleGroup type="single" value={preset} onValueChange={(v) => v && setPreset(v as Preset)} className="rounded-xl border border-border bg-card p-1">
-              {PRESETS.map((o) => <ToggleGroupItem key={o.value} value={o.value} className="h-8 rounded-lg px-3 text-xs">{o.label}</ToggleGroupItem>)}
-            </ToggleGroup>
-            {preset === "custom" && (
-              <div className="flex items-center gap-1.5">
-                <Input type="date" aria-label="De" className="h-9 w-[9.5rem]" value={custom.from} max={custom.to} onChange={(e) => e.target.value && setCustom({ ...custom, from: e.target.value })} />
-                <span className="text-xs text-muted-foreground">até</span>
-                <Input type="date" aria-label="Até" className="h-9 w-[9.5rem]" value={custom.to} min={custom.from} onChange={(e) => e.target.value && setCustom({ ...custom, to: e.target.value })} />
-              </div>
-            )}
-          </div>
-        }
+        actions={<PeriodPicker period={period} />}
       />
 
       {error && <p className="mb-4 text-sm text-destructive">Não foi possível carregar o dashboard.</p>}
@@ -104,6 +73,8 @@ export default function Dashboard() {
               compare={<Delta current={c.commissions} previous={p.commissions} inverse />} previousLabel={money(p.commissions)}
               formula="Comissões geradas, sem as estornadas" />
           </div>
+
+          <TeamResults from={from} to={to} />
 
           <div className="mt-6 grid gap-6 xl:grid-cols-3">
             <SectionCard className="xl:col-span-2" title={`Faturamento por ${data.granularity === "semana" ? "semana" : "dia"}`}

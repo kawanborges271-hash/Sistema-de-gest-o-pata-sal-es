@@ -84,7 +84,8 @@ export type Professional = {
   phone: string | null;
   email: string | null;
   color: string;
-  default_commission_pct: number;
+  /** Só vem para o administrador */
+  default_commission_pct?: number;
   user_id: string | null;
   sort_order: number;
   active: boolean;
@@ -96,6 +97,7 @@ export type ProfessionalService = {
   service_id: string;
   price: number | null;
   duration_minutes: number | null;
+  /** Só vem para o administrador (para os outros é sempre null) */
   commission_pct: number | null;
 };
 
@@ -639,6 +641,65 @@ export type DashboardSummary = {
   series: { bucket: string; current: number; previous: number }[];
   upcoming: { id: string; starts_at: string; status: AppointmentStatus; client_name: string; services: string | null; professional: string | null }[];
   birthdays: { id: string; name: string; phone: string | null; date: string; age: number }[];
+};
+
+// ---------------------------------------------------------------------
+// Acesso por colaborador: painel do profissional e resultado da equipe
+// ---------------------------------------------------------------------
+export type ProfessionalMetrics = {
+  from: string;
+  to: string;
+  revenue: number;
+  services_revenue: number;
+  product_revenue: number;
+  services_count: number;
+  orders: number;
+  avg_ticket: number | null;
+  appointments: number;
+  attended: number;
+  no_shows: number;
+  attendance_rate: number | null;
+  booked_hours: number;
+  available_hours: number;
+  occupancy: number | null;
+  clients: number;
+  new_clients: number;
+  commissions: number;
+};
+
+export type ProfessionalPanel = {
+  professional: { id: string; name: string; color: string; role_title: string | null; commission_pct: number | null };
+  current: ProfessionalMetrics;
+  previous: ProfessionalMetrics;
+  granularity: "dia" | "semana";
+  series: { bucket: string; current: number; previous: number }[];
+  top_services: { name: string; kind: "servico" | "produto" | "pacote"; quantity: number; revenue: number }[];
+  today: { id: string; starts_at: string; ends_at: string; status: AppointmentStatus; client_id: string; client_name: string; services: string | null }[];
+  to_call: { client_id: string; name: string; phone: string; last_visit_at: string; last_service: string | null; return_at: string | null; reason: "retoque" | "sumiu" }[];
+  messages: { id: string; kind: MessageKind; status: QueueStatus; at: string; client_name: string | null }[];
+  message_stats: { sent: number; scheduled: number; failed: number };
+  commissions_pending: number;
+};
+
+export type TeamMemberResult = {
+  professional_id: string;
+  name: string;
+  color: string;
+  active: boolean;
+  has_login: boolean;
+  current: ProfessionalMetrics;
+  previous_revenue: number;
+  share: number | null;
+  commission_share: number | null;
+};
+
+export type TeamReport = {
+  from: string;
+  to: string;
+  revenue: number;
+  previous_revenue: number;
+  unassigned_revenue: number;
+  professionals: TeamMemberResult[];
 };
 
 export type MarketingChannel = "meta_ads" | "google" | "instagram" | "indicacao";

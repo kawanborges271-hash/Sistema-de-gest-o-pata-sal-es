@@ -51,6 +51,8 @@ Telas só do administrador, exceto Fidelidade (recepção vê saldos e resgata n
 | Dashboard | Faturamento (card preto), comandas fechadas, ticket médio, agendamentos, comparecimento (compareceram ÷ (compareceram + faltaram)), ocupação da agenda (horas agendadas ÷ horas disponíveis), clientes novos, clientes que voltaram, venda de produtos (% do faturamento) e comissões. Cada card mostra a fórmula e a variação contra o período anterior do mesmo tamanho. Gráfico por dia (por semana acima de 62 dias) com o período anterior ao lado, próximos agendamentos e aniversariantes da semana. Períodos: 7, 30, 90 dias, este mês ou datas livres. |
 | Marketing & Vendas | Lançamento mensal por canal (Meta Ads, Google, Instagram orgânico, indicação). Leads, agendamentos, vendas e receita vêm sozinhos da origem da cliente e podem ser corrigidos à mão. ROI ((receita − investimento) ÷ investimento), CPL, custo por agendamento, ticket médio, lead → venda, funil do mês e evolução de 12 meses. Mês sem lançamento aparece como "—". |
 | Inteligência | Plano de ação numerado por valor estimado (leads parados há mais de 3 dias, follow-ups atrasados, hora de retocar, vieram e não voltaram, para reativar, pacotes acabando, dia vazio nos próximos 7 dias, faltas altas), cada um com a próxima ação. Listas com "Criar campanha" que já abre a fila do WhatsApp com o público certo. Serviços que mais faturam, faltas por dia da semana, mapa de calor de ocupação por dia e hora e desempenho por profissional (agendados, comparecimento, faturamento, ticket, retorno das clientes, produtos). Amostra menor que 3 aparece como "poucos". |
+| Meu painel (profissional) | Só os números de quem está logado: quanto faturou (serviços e produtos dele, com o desconto da comanda dividido), comissão do período e a receber, atendimentos, ticket médio, comparecimento, ocupação da agenda dele, clientes atendidas e novas, gráfico por dia, o que mais vende, agenda de hoje, clientes dele para chamar de volta (retoque vencido ou sumidas há 60 dias, com WhatsApp e mensagem pronta) e as mensagens automáticas das clientes dele. No celular fica na barra de baixo. |
+| Faturamento por colaborador (dono) | No Dashboard: quanto cada pessoa faturou, % do salão, atendimentos, ticket, comparecimento, comissão e % da comissão sobre o que faturou, mais a linha "sem profissional" (balcão) e o total. "Painel" abre o painel de qualquer profissional. |
 | Fidelidade | Pontos por real pago (configurável), prêmios em serviços resgatados direto na comanda (com "desfazer"), programa de indicação: quem indica ganha crédito quando a indicada paga a primeira comanda, e usa o crédito como forma de pagamento. Extrato por cliente, ajuste manual com motivo obrigatório. Cancelar a comanda devolve pontos, resgate e crédito. |
 
 ## Fase 5: Painel SaaS (super admin)
@@ -80,6 +82,10 @@ insert into public.platform_admins (user_id) select id from auth.users where ema
 
 - **RLS em todas as tabelas.** Cada linha tem `salon_id`; só membros ativos do salão leem/escrevem, e o papel é checado na policy.
   - Profissional vê só os próprios itens de agenda e só clientes que atendeu ou tem marcados.
+  - O percentual de comissão de cada profissional (`professionals.default_commission_pct`, `professional_services.commission_pct`)
+    não é legível pela equipe: só o admin lê, por `commission_rates`. O resultado de cada pessoa sai de
+    `professional_panel` (o próprio; o admin abre o de qualquer um) e `team_report` (só admin).
+  - Convite aceito liga o login ao cadastro de profissional com o mesmo e-mail; em Equipe o dono liga ou troca à mão.
   - Recepção agenda e cadastra clientes, mas não altera catálogo, equipe ou configurações.
 - **Sem sobreposição:** `EXCLUDE USING gist` por profissional em `appointment_items` (encaixe é a exceção explícita).
 - **Jornada, intervalos e bloqueios** validados por trigger; o erro volta com prefixo (`FORA_DA_JORNADA`, `BLOQUEIO`) para a tela oferecer encaixe.

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import type { DashboardSummary, IntelAction, IntelReport, MarketingChannel, MarketingRow } from "@/lib/types";
+import type { DashboardSummary, IntelAction, IntelReport, MarketingChannel, MarketingRow, ProfessionalPanel, TeamReport } from "@/lib/types";
 
 export function useDashboard(from: string, to: string) {
   const salonId = useAuth().salon?.id;
@@ -87,6 +87,38 @@ export function useIntelReport(days: number) {
       const { data, error } = await supabase.rpc("intelligence_report", { p_salon_id: salonId, p_days: days });
       if (error) throw error;
       return data as IntelReport;
+    },
+  });
+}
+
+/** Painel do profissional: o próprio, ou (para o admin) o de quem for escolhido. */
+export function useProfessionalPanel(from: string, to: string, professionalId?: string | null) {
+  const salonId = useAuth().salon?.id;
+  return useQuery({
+    queryKey: ["professional-panel", salonId, from, to, professionalId ?? null],
+    enabled: Boolean(salonId),
+    retry: false,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("professional_panel", {
+        p_salon_id: salonId, p_from: from, p_to: to, p_professional_id: professionalId ?? null,
+      });
+      if (error) throw error;
+      return data as ProfessionalPanel;
+    },
+  });
+}
+
+/** Quanto cada pessoa da equipe faturou e quanto isso é do salão (só o admin). */
+export function useTeamReport(from: string, to: string) {
+  const salonId = useAuth().salon?.id;
+  return useQuery({
+    queryKey: ["team-report", salonId, from, to],
+    enabled: Boolean(salonId),
+    retry: false,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("team_report", { p_salon_id: salonId, p_from: from, p_to: to });
+      if (error) throw error;
+      return data as TeamReport;
     },
   });
 }

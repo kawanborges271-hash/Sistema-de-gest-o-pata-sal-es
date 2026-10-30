@@ -92,3 +92,20 @@ export function useUpdateMember() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["members"] }),
   });
 }
+
+/** Liga o login de um membro ao cadastro de profissional (agenda, comandas e comissões dele). */
+export function useLinkProfessional() {
+  const qc = useQueryClient();
+  const salonId = useAuth().salon?.id;
+  return useMutation({
+    mutationFn: async ({ userId, professionalId }: { userId: string; professionalId: string | null }) => {
+      const off = await supabase.from("professionals").update({ user_id: null }).eq("salon_id", salonId!).eq("user_id", userId);
+      if (off.error) throw off.error;
+      if (professionalId) {
+        const on = await supabase.from("professionals").update({ user_id: userId }).eq("id", professionalId);
+        if (on.error) throw on.error;
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["professionals"] }),
+  });
+}

@@ -24,9 +24,11 @@ export function RequireSalon() {
   return <Outlet />;
 }
 
-export function RequireFeature({ feature }: { feature: Feature }) {
+/** Com uma lista, basta poder uma das telas. */
+export function RequireFeature({ feature }: { feature: Feature | Feature[] }) {
   const { role } = useAuth();
-  if (!can(role, feature)) return <Navigate to="/agenda" replace />;
+  const list = Array.isArray(feature) ? feature : [feature];
+  if (!list.some((f) => can(role, f))) return <Navigate to="/agenda" replace />;
   return <Outlet />;
 }
 
