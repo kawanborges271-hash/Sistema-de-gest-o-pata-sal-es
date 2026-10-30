@@ -1,22 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Ban, CalendarDays, ChevronLeft, ChevronRight, Hourglass, Plus, UserCog } from "lucide-react";
+import { Ban, CalendarDays, ChevronLeft, ChevronRight, Hourglass, Plus, SlidersHorizontal, UserCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageHeader } from "@/components/common/PageHeader";
 import { EmptyState } from "@/components/common/EmptyState";
 import { TimeGrid, type GridColumn, type GridItem } from "@/components/agenda/TimeGrid";
 import { MonthView, monthGridRange } from "@/components/agenda/MonthView";
 import { ListView } from "@/components/agenda/ListView";
+import { AgendaCards } from "@/components/agenda/AgendaCards";
 import { AppointmentDialog, type AppointmentDefaults } from "@/components/agenda/AppointmentDialog";
 import { AppointmentSheet } from "@/components/agenda/AppointmentSheet";
 import { BlockDialog } from "@/components/agenda/BlockDialog";
 import { WaitlistDialog } from "@/components/agenda/WaitlistDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useBlocks, useProfessionalHours, useProfessionalServices, useProfessionals, useServices } from "@/hooks/useCatalog";
 import { useAppointments, useReschedule, useSaveWaitlist } from "@/hooks/useAgenda";
 import { BLOCK_LABEL, STATUS_LABEL, STATUS_ORDER } from "@/lib/agenda";
@@ -36,9 +39,10 @@ export default function Agenda() {
   const { can } = usePermissions();
   const manage = can("agenda.gerenciar");
   const [params, setParams] = useSearchParams();
+  const isMobile = useIsMobile();
 
   const today = todayKey(tz);
-  const [view, setView] = useState<View>(() => (window.innerWidth < 768 ? "lista" : "dia"));
+  const [view, setView] = useState<View>("dia");
   const [day, setDay] = useState(today);
   const [proFilter, setProFilter] = useState<string>(role === "profissional" && professionalId ? professionalId : "all");
   const [statusFilter, setStatusFilter] = useState<AppointmentStatus | null>(null);
@@ -51,6 +55,7 @@ export default function Agenda() {
   const [sheetId, setSheetId] = useState<string | null>(null);
   const [blockOpen, setBlockOpen] = useState(false);
   const [waitlistOpen, setWaitlistOpen] = useState(false);
+  const [optionsOpen, setOptionsOpen] = useState(false);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 60_000);
@@ -260,6 +265,129 @@ export default function Agenda() {
 
   const noPros = !isLoading && pros.filter((p) => p.active).length === 0;
 
+  const dialogs = (
+    <>
+        <AppointmentDialog
+          open={createOpen}
+          onOpenChange={(o) => { setCreateOpen(o); if (!o) setWaitlistBooking(null); }}
+          defaults={defaults}
+          onCreated={(id) => {
+            if (waitlistBooking) saveWaitlist.mutate({ id: waitlistBooking, status: "agendado", appointment_id: id });
+            setWaitlistBooking(null);
+            setSheetId(id);
+          }}
+        />
+        <AppointmentSheet
+          id={sheetId}
+          onOpenChange={(o) => !o && setSheetId(null)}
+          onSelect={setSheetId}
+          onBook={(d, waitlistId) => { setSheetId(null); setWaitlistBooking(waitlistId); openCreate(d); }}
+        />
+        <BlockDialog open={blockOpen} onOpenChange={setBlockOpen} day={day} professionalId={proFilter !== "all" ? proFilter : null} />
+        <WaitlistDialog open={waitlistOpen} onOpenChange={setWaitlistOpen} />
+    </>
+  );
+
+  // Celular: cabeçalho enxuto, cards grandes por horário e um botão + flutuante.
+  if (isMobile) {
+    const mobileView = view === "lista" ? "semana" : view;
+    return (
+      <div>
+        <div className="mb-6">
+          <span className="inline-block rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">Agenda</span>
+          <h1 className="mt-3 font-display text-[34px] font-light leading-none">Sua agenda.</h1>
+          <div className="mt-3 h-px w-40 bg-copper/60" />
+        </div>
+
+        <div className="mb-4 flex items-center gap-2">
+          <Button variant="outline" size="icon" className="h-10 w-10 shrink-0 rounded-full" onClick={() => step(-1)} aria-label="Anterior"><ChevronLeft className="h-4 w-4" /></Button>
+          <Button variant="outline" size="icon" className="h-10 w-10 shrink-0 rounded-full" onClick={() => step(1)} aria-label="Próximo"><ChevronRight className="h-4 w-4" /></Button>
+          <Button variant="outline" className="h-10 shrink-0 rounded-full px-4" onClick={() => setDay(today)}>Hoje</Button>
+          <div className="min-w-0 flex-1 truncate pl-1 font-display text-lg first-letter:uppercase">
+            {mobileView === "dia" ? labelDay(day, "EEE, d 'de' MMM") : title}
+          </div>
+          <Button variant="ghost" size="icon" className="relative h-10 w-10 shrink-0 rounded-full" onClick={() => setOptionsOpen(true)} aria-label="Filtros e opções">
+            <SlidersHorizontal className="h-4 w-4" />
+            {(proFilter !== "all" && role !== "profissional" || showCancelled || statusFilter) && <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-copper" />}
+          </Button>
+        </div>
+
+        <Tabs value={mobileView} onValueChange={(v) => setView(v as View)} className="mb-5">
+          <TabsList className="h-11 w-full rounded-full p-1">
+            <TabsTrigger value="dia" className="flex-1 rounded-full">Dia</TabsTrigger>
+            <TabsTrigger value="semana" className="flex-1 rounded-full">Semana</TabsTrigger>
+            <TabsTrigger value="mes" className="flex-1 rounded-full">Mês</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {noPros ? (
+          <EmptyState icon={UserCog} title="A agenda precisa de profissionais"
+            description="Cadastre quem atende, com serviços e jornada."
+            action={can("profissionais.editar") && <Button asChild><a href="/profissionais">Cadastrar profissionais</a></Button>} />
+        ) : mobileView === "mes" ? (
+          <MonthView day={day} today={today} appointments={visible} tz={tz} onPickDay={(d) => { setDay(d); setView("dia"); }} />
+        ) : isLoading ? (
+          <div className="space-y-3">{[0, 1, 2].map((i) => <div key={i} className="h-24 animate-pulse rounded-2xl bg-muted" />)}</div>
+        ) : (
+          <AgendaCards appointments={visible} services={services} pros={pros} tz={tz} groupByDay={mobileView === "semana"} onOpen={setSheetId} />
+        )}
+
+        {manage && (
+          <button
+            type="button"
+            onClick={() => openCreate({ day, time: "09:00", professional_id: proFilter !== "all" ? proFilter : null })}
+            className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg active:scale-95"
+            aria-label="Novo agendamento"
+          >
+            <Plus className="h-6 w-6" />
+          </button>
+        )}
+
+        <Sheet open={optionsOpen} onOpenChange={setOptionsOpen}>
+          <SheetContent side="bottom" className="rounded-t-3xl pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+            <SheetHeader><SheetTitle>Filtros e opções</SheetTitle></SheetHeader>
+            <div className="mt-5 space-y-5">
+              {role !== "profissional" && (
+                <div className="space-y-2">
+                  <div className="label-caps">Profissional</div>
+                  <Select value={proFilter} onValueChange={setProFilter}>
+                    <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os profissionais</SelectItem>
+                      {pros.filter((p) => p.active).map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              <div className="space-y-2">
+                <div className="label-caps">Status</div>
+                <div className="flex flex-wrap gap-2">
+                  {STATUS_ORDER.map((s) => (
+                    <button key={s} onClick={() => setStatusFilter(statusFilter === s ? null : s)}
+                      className={cn("rounded-full border px-3 py-1.5 text-xs transition-colors",
+                        statusFilter === s ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card")}>
+                      {STATUS_LABEL[s]} · {counts[s]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <label className="flex items-center justify-between text-sm">
+                Mostrar cancelados
+                <Switch checked={showCancelled} onCheckedChange={setShowCancelled} />
+              </label>
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <Button variant="outline" className="h-11" onClick={() => { setOptionsOpen(false); setBlockOpen(true); }}><Ban className="mr-1 h-4 w-4" /> Bloquear</Button>
+                {manage && <Button variant="outline" className="h-11" onClick={() => { setOptionsOpen(false); setWaitlistOpen(true); }}><Hourglass className="mr-1 h-4 w-4" /> Lista de espera</Button>}
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+
+        {dialogs}
+      </div>
+    );
+  }
+
   return (
     <div>
       <PageHeader
@@ -349,24 +477,7 @@ export default function Agenda() {
         </>
       )}
 
-      <AppointmentDialog
-        open={createOpen}
-        onOpenChange={(o) => { setCreateOpen(o); if (!o) setWaitlistBooking(null); }}
-        defaults={defaults}
-        onCreated={(id) => {
-          if (waitlistBooking) saveWaitlist.mutate({ id: waitlistBooking, status: "agendado", appointment_id: id });
-          setWaitlistBooking(null);
-          setSheetId(id);
-        }}
-      />
-      <AppointmentSheet
-        id={sheetId}
-        onOpenChange={(o) => !o && setSheetId(null)}
-        onSelect={setSheetId}
-        onBook={(d, waitlistId) => { setSheetId(null); setWaitlistBooking(waitlistId); openCreate(d); }}
-      />
-      <BlockDialog open={blockOpen} onOpenChange={setBlockOpen} day={day} professionalId={proFilter !== "all" ? proFilter : null} />
-      <WaitlistDialog open={waitlistOpen} onOpenChange={setWaitlistOpen} />
+      {dialogs}
     </div>
   );
 }
